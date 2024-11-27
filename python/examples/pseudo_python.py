@@ -1075,7 +1075,7 @@ class PseudoPythonFunctionType(LanguageRepresentationFunctionType):
     language_name = "Pseudo Python"
 
     def create(self, arch: Architecture, owner: Function, hlil: HighLevelILFunction):
-        return PseudoPythonFunction(arch, owner, hlil)
+        return PseudoPythonFunction(self, arch, owner, hlil)
 
     def function_type_tokens(self, func: Function, settings: DisassemblySettings) -> DisassemblyTextLine:
         tokens = []
