@@ -8,6 +8,7 @@ from . import binaryview
 from . import function
 from . import _binaryninjacore as core
 from . import types
+from . import externallibrary
 
 
 class Component:
@@ -42,7 +43,7 @@ class Component:
         return f'<Component "{self.display_name}" "({self.guid[:8]}...")>'
 
     def __del__(self):
-        if (hasattr(self, 'handle')):
+        if core is not None and hasattr(self, 'handle'):
             core.BNFreeComponent(self.handle)
 
     def __str__(self):
@@ -133,6 +134,36 @@ class Component:
 
     def remove_data_variable(self, data_variable):
         return core.BNComponentRemoveDataVariable(self.handle, data_variable.address)
+
+    def add_external_location(self, location: externallibrary.ExternalLocation) -> bool:
+        """
+        Add an external location to this component.
+
+        :param location: External location to add
+        :return: True if the external location was successfully added.
+        """
+
+        return core.BNComponentAddExternalLocation(self.handle, location._handle)
+
+    def remove_external_location(self, location: externallibrary.ExternalLocation) -> bool:
+        """
+        Remove an external location from this component.
+
+        :param location: External location to remove
+        :return: True if the external location was successfully removed.
+        """
+
+        return core.BNComponentRemoveExternalLocation(self.handle, location._handle)
+
+    def contains_external_location(self, location: externallibrary.ExternalLocation) -> bool:
+        """
+        Check whether this component contains an external location.
+
+        :param location: External location to check
+        :return: True if this component contains the external location.
+        """
+
+        return core.BNComponentContainsExternalLocation(self.handle, location._handle)
 
     @property
     def display_name(self) -> str:
@@ -252,6 +283,25 @@ class Component:
                     core.BNFreeFunctionList(bn_functions, count.value)
 
         return iter(FunctionIterator(self.view, self))
+
+    @property
+    def external_locations(self) -> List[externallibrary.ExternalLocation]:
+        """
+        ``external_locations`` List of all ExternalLocations contained within this Component
+
+        :return: A list of ExternalLocations
+        """
+
+        count = ctypes.c_ulonglong(0)
+        bn_locations = core.BNComponentGetContainedExternalLocations(self.handle, count)
+        locations = []
+        try:
+            for i in range(count.value):
+                locations.append(externallibrary.ExternalLocation(core.BNNewExternalLocationReference(bn_locations[i])))
+        finally:
+            core.BNFreeExternalLocationList(bn_locations, count.value)
+
+        return locations
 
     @property
     def data_variable_list(self):

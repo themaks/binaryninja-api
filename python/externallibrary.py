@@ -91,13 +91,37 @@ class ExternalLocation:
 			core.BNFreeExternalLocation(self._handle)
 
 	def __repr__(self) -> str:
-		return f'<ExternalLocation: {self.source_symbol}>'
+		return f"<ExternalLocation: {self.source_symbol}>"
 
 	def __str__(self) -> str:
-		return f'<ExternalLocation: {self.source_symbol}>'
+		return f"<ExternalLocation: {self.source_symbol}>"
+
+	@classmethod
+	def create(
+		cls,
+		source_symbol: "types.CoreSymbol",
+		library: Optional[ExternalLibrary] = None,
+		target_symbol: Optional[str] = None,
+		target_address: Optional[int] = None
+	) -> "ExternalLocation":
+		"""
+		Create an external location without adding it to the binary view
+
+		:param source_symbol: The source symbol for this ExternalLocation
+		:param target_address: The address that this ExternalLocation will point to
+		:param target_symbol: The symbol that this ExternalLocation will point to
+		:param library: The ExternalLibrary that this ExternalLocation will point to
+		:return: The new ExternalLocation
+		"""
+		source_symbol_handle = source_symbol._handle
+		library_handle = library._handle if library is not None else None
+		target_address = ctypes.c_ulonglong(target_address) if target_address is not None else None
+		return ExternalLocation(
+			core.BNCreateExternalLocation(source_symbol_handle, library_handle, target_symbol, target_address)
+		)
 
 	@property
-	def source_symbol(self) -> 'types.CoreSymbol':
+	def source_symbol(self) -> "types.CoreSymbol":
 		"""
 		Get the source symbol for this ExternalLocation
 

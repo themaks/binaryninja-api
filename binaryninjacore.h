@@ -3868,6 +3868,7 @@ extern "C"
 	BINARYNINJACOREAPI BNProjectFile* BNExternalLibraryGetBackingFile(BNExternalLibrary* lib);
 
 	// ExternalLocation object
+	BINARYNINJACOREAPI BNExternalLocation* BNCreateExternalLocation(BNSymbol* sourceSymbol, BNExternalLibrary* library, const char* targetSymbol, uint64_t* targetAddress);
 	BINARYNINJACOREAPI BNExternalLocation* BNNewExternalLocationReference(BNExternalLocation*loc);
 	BINARYNINJACOREAPI void BNFreeExternalLocation(BNExternalLocation*loc);
 	BINARYNINJACOREAPI void BNFreeExternalLocationList(BNExternalLocation**locs, size_t count);
@@ -7142,6 +7143,7 @@ extern "C"
 	BINARYNINJACOREAPI BNFunction** BNComponentGetContainedFunctions(BNComponent *component, size_t *count);
 	BINARYNINJACOREAPI BNComponent** BNComponentGetContainedComponents(BNComponent *component, size_t *count);
 	BINARYNINJACOREAPI BNDataVariable* BNComponentGetContainedDataVariables(BNComponent *component, size_t *count);
+	BINARYNINJACOREAPI BNExternalLocation** BNComponentGetContainedExternalLocations(BNComponent *component, size_t *count);
 
 	BINARYNINJACOREAPI BNDataVariable* BNComponentGetReferencedDataVariables(BNComponent *component, size_t *count);
 	BINARYNINJACOREAPI BNDataVariable* BNComponentGetReferencedDataVariablesRecursive(BNComponent *component, size_t *count);
@@ -7156,15 +7158,18 @@ extern "C"
 	BINARYNINJACOREAPI bool BNComponentContainsFunction(BNComponent* component, BNFunction *function);
 	BINARYNINJACOREAPI bool BNComponentContainsComponent(BNComponent *parent, BNComponent *component);
 	BINARYNINJACOREAPI bool BNComponentContainsDataVariable(BNComponent* component, uint64_t address);
+	BINARYNINJACOREAPI bool BNComponentContainsExternalLocation(BNComponent* component, BNExternalLocation* location);
 
 	BINARYNINJACOREAPI bool BNComponentAddFunctionReference(BNComponent* component, BNFunction* function);
 	BINARYNINJACOREAPI bool BNComponentAddComponent(BNComponent* parent, BNComponent* component);
 	BINARYNINJACOREAPI bool BNComponentAddDataVariable(BNComponent* component, uint64_t address);
+	BINARYNINJACOREAPI bool BNComponentAddExternalLocation(BNComponent* component, BNExternalLocation* location);
 
 	BINARYNINJACOREAPI bool BNComponentRemoveComponent(BNComponent* component);
 	BINARYNINJACOREAPI bool BNComponentRemoveFunctionReference(BNComponent* component, BNFunction* function);
 	BINARYNINJACOREAPI void BNComponentRemoveAllFunctions(BNComponent* component);
 	BINARYNINJACOREAPI bool BNComponentRemoveDataVariable(BNComponent* component, uint64_t address);
+	BINARYNINJACOREAPI bool BNComponentRemoveExternalLocation(BNComponent* component, BNExternalLocation* location);
 
 	BINARYNINJACOREAPI void BNComponentAddAllMembersFromComponent(BNComponent* component, BNComponent* fromComponent);
 	BINARYNINJACOREAPI char* BNComponentGetGuid(BNComponent* component);
