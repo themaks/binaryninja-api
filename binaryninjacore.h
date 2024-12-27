@@ -302,6 +302,7 @@ extern "C"
 	typedef struct BNDemangler BNDemangler;
 	typedef struct BNFirmwareNinja BNFirmwareNinja;
 	typedef struct BNFirmwareNinjaReferenceNode BNFirmwareNinjaReferenceNode;
+	typedef struct BNRenderLayer BNRenderLayer;
 
 	//! Console log levels
 	typedef enum BNLogLevel
@@ -3537,6 +3538,11 @@ extern "C"
 		size_t total;
 		size_t unique;
 	} BNFirmwareNinjaDeviceAccesses;
+
+	typedef struct BNRenderLayerCallbacks
+	{
+		void* context;
+	} BNRenderLayerCallbacks;
 
 	BINARYNINJACOREAPI char* BNAllocString(const char* contents);
 	BINARYNINJACOREAPI char* BNAllocStringWithLength(const char* contents, size_t len);
@@ -8057,6 +8063,14 @@ extern "C"
 	BINARYNINJACOREAPI void BNFreeFirmwareNinjaReferenceNode(BNFirmwareNinjaReferenceNode* node);
 	BINARYNINJACOREAPI BNFirmwareNinjaReferenceNode* BNNewFirmwareNinjaReferenceNodeReference(BNFirmwareNinjaReferenceNode* node);
 	BINARYNINJACOREAPI void BNFreeFirmwareNinjaReferenceNodes(BNFirmwareNinjaReferenceNode** nodes, size_t count);
+
+	// Render Layers
+	BINARYNINJACOREAPI BNRenderLayer* BNRegisterRenderLayer(const char* name, BNRenderLayerCallbacks* callbacks);
+	BINARYNINJACOREAPI BNRenderLayer** BNGetRenderLayerList(size_t* count);
+	BINARYNINJACOREAPI void BNFreeRenderLayerList(BNRenderLayer** renderLayers);
+	BINARYNINJACOREAPI BNRenderLayer* BNGetRenderLayerByName(const char* name);
+	BINARYNINJACOREAPI char* BNGetRenderLayerName(BNRenderLayer* renderLayer);
+
 #ifdef __cplusplus
 }
 #endif
