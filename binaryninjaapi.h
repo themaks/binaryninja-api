@@ -11435,6 +11435,12 @@ namespace BinaryNinja {
 		*/
 		Ref<FlowGraphNode> GetNode(size_t i);
 
+		/*! Get the total number of nodes in the graph
+
+			\return Node count
+		 */
+		size_t GetNodeCount() const;
+
 		/*! Whether the FlowGraph has any nodes added
 
 			\return Whether the FlowGraph has any nodes added
@@ -11443,12 +11449,29 @@ namespace BinaryNinja {
 
 		/*! Add a node to this flowgraph
 
+			\note After the graph has completed layout, this function has no effect.
+
 			\param node Node to be added.
 			\return Index of the node
 		*/
 		size_t AddNode(FlowGraphNode* node);
 
+		/*! Replace an existing node in the graph with a new node.
+			Any existing edges referencing the old node will be updated to point to
+			the new node.
 
+			\note After the graph has completed layout, this function has no effect.
+
+			\param i Index of the node to replace
+			\param newNode New node with which to replace the old node
+		 */
+		void ReplaceNode(size_t i, FlowGraphNode* newNode);
+
+		/*! Clear all the nodes in the graph
+
+			\note After the graph has completed layout, this function has no effect.
+		 */
+		void ClearNodes();
 
 		/*! Flow graph width
 

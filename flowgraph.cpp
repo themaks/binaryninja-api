@@ -256,6 +256,12 @@ Ref<FlowGraphNode> FlowGraph::GetNode(size_t i)
 }
 
 
+size_t FlowGraph::GetNodeCount() const
+{
+	return BNGetFlowGraphNodeCount(m_object);
+}
+
+
 bool FlowGraph::HasNodes() const
 {
 	return BNFlowGraphHasNodes(m_object);
@@ -266,6 +272,18 @@ size_t FlowGraph::AddNode(FlowGraphNode* node)
 {
 	m_cachedNodes[node->GetObject()] = node;
 	return BNAddFlowGraphNode(m_object, node->GetObject());
+}
+
+
+void FlowGraph::ReplaceNode(size_t i, FlowGraphNode* newNode)
+{
+	BNReplaceFlowGraphNode(m_object, i, newNode->GetObject());
+}
+
+
+void FlowGraph::ClearNodes()
+{
+	BNClearFlowGraphNodes(m_object);
 }
 
 

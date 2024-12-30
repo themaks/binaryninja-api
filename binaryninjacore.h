@@ -5528,8 +5528,11 @@ extern "C"
 	BINARYNINJACOREAPI BNFlowGraphNode** BNGetFlowGraphNodesInRegion(
 	    BNFlowGraph* graph, int left, int top, int right, int bottom, size_t* count);
 	BINARYNINJACOREAPI void BNFreeFlowGraphNodeList(BNFlowGraphNode** nodes, size_t count);
+	BINARYNINJACOREAPI size_t BNGetFlowGraphNodeCount(BNFlowGraph* graph);
 	BINARYNINJACOREAPI bool BNFlowGraphHasNodes(BNFlowGraph* graph);
 	BINARYNINJACOREAPI size_t BNAddFlowGraphNode(BNFlowGraph* graph, BNFlowGraphNode* node);
+	BINARYNINJACOREAPI void BNReplaceFlowGraphNode(BNFlowGraph* graph, size_t i, BNFlowGraphNode* newNode);
+	BINARYNINJACOREAPI void BNClearFlowGraphNodes(BNFlowGraph* graph);
 
 	BINARYNINJACOREAPI int BNGetFlowGraphWidth(BNFlowGraph* graph);
 	BINARYNINJACOREAPI int BNGetFlowGraphHeight(BNFlowGraph* graph);

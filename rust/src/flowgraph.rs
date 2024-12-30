@@ -15,7 +15,7 @@
 //! Interfaces for creating and displaying pretty CFGs in Binary Ninja.
 
 use binaryninjacore_sys::*;
-
+use std::slice;
 use crate::disassembly::DisassemblyTextLine;
 
 use crate::rc::*;
@@ -128,8 +128,51 @@ impl FlowGraph {
         unsafe { Ref::new(FlowGraph::from_raw(BNCreateFlowGraph())) }
     }
 
+    pub fn nodes<'a>(&self) -> Vec<Ref<FlowGraphNode<'a>>> {
+        let mut count: usize = 0;
+        let mut nodes_ptr = unsafe { BNGetFlowGraphNodes(self.handle, &mut count as *mut usize) };
+
+        let mut nodes = unsafe { slice::from_raw_parts_mut(nodes_ptr, count) };
+
+        let mut result = vec![];
+        result.reserve(count);
+
+        for i in 0..count {
+            result.push(unsafe { RefCountable::inc_ref(&FlowGraphNode::from_raw(nodes[i])) });
+        }
+
+        unsafe { BNFreeFlowGraphNodeList(nodes_ptr, count) };
+
+        result
+    }
+
+    pub fn get_node<'a>(&self, i: usize) -> Option<Ref<FlowGraphNode<'a>>> {
+        let node_ptr = unsafe { BNGetFlowGraphNode(self.handle, i) };
+        if node_ptr.is_null() {
+            None
+        } else {
+            Some(unsafe { Ref::new(FlowGraphNode::from_raw(node_ptr)) })
+        }
+    }
+
+    pub fn get_node_count(&self) -> usize {
+        unsafe { BNGetFlowGraphNodeCount(self.handle) }
+    }
+
+    pub fn has_nodes(&self) -> bool {
+        unsafe { BNFlowGraphHasNodes(self.handle) }
+    }
+
     pub fn append(&self, node: &FlowGraphNode) -> usize {
         unsafe { BNAddFlowGraphNode(self.handle, node.handle) }
+    }
+
+    pub fn replace(&self, index: usize, node: &FlowGraphNode) {
+        unsafe { BNReplaceFlowGraphNode(self.handle, index, node.handle) }
+    }
+
+    pub fn clear(&self) {
+        unsafe { BNClearFlowGraphNodes(self.handle) }
     }
 
     pub fn set_option(&self, option: FlowGraphOption, value: bool) {

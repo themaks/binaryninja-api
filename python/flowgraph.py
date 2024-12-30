@@ -613,6 +613,11 @@ class FlowGraph:
 		return result
 
 	@property
+	def node_count(self) -> int:
+		"""Number of nodes in graph (read-only)"""
+		return core.BNGetFlowGraphNodeCount(self.handle)
+
+	@property
 	def has_nodes(self):
 		"""Whether the flow graph has at least one node (read-only)"""
 		return core.BNFlowGraphHasNodes(self.handle)
@@ -835,11 +840,34 @@ class FlowGraph:
 		"""
 		``append`` adds a node to a flow graph.
 
+		.. note:: After the graph has completed layout, this function has no effect.
+
 		:param FlowGraphNode node: Node to add
 		:return: Index of node
 		:rtype: int
 		"""
 		return core.BNAddFlowGraphNode(self.handle, node.handle)
+
+	def replace(self, index, node):
+		"""
+		``replace`` replaces an existing node in the graph with a new node.
+		Any existing edges referencing the old node will be updated to point to
+		the new node.
+
+		.. note:: After the graph has completed layout, this function has no effect.
+
+		:param index: Index of the node to replace
+		:param node: New node with which to replace the old node
+		"""
+		core.BNReplaceFlowGraphNode(self.handle, index, node.handle)
+
+	def clear(self):
+		"""
+		``clear`` clears all the nodes in the graph
+
+		.. note:: After the graph has completed layout, this function has no effect.
+		"""
+		core.BNClearFlowGraphNodes(self.handle)
 
 	def show(self, title):
 		"""
