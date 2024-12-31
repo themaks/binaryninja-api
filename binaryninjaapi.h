@@ -4069,7 +4069,9 @@ namespace BinaryNinja {
 		Ref<BasicBlock> block;
 		DisassemblyTextLine contents;
 
-		static LinearDisassemblyLine FromAPIObject(BNLinearDisassemblyLine* line);
+		BNLinearDisassemblyLine GetAPIObject() const;
+		static LinearDisassemblyLine FromAPIObject(const BNLinearDisassemblyLine* line);
+		static void FreeAPIObject(BNLinearDisassemblyLine* line);
 	};
 
 	class NamedTypeReference;
