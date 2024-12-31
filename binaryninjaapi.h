@@ -11565,6 +11565,13 @@ namespace BinaryNinja {
 
 		void SetOption(BNFlowGraphOption option, bool value = true);
 		bool IsOptionSet(BNFlowGraphOption option);
+
+		/*! todo: doc */
+		std::vector<class RenderLayer*> GetRenderLayers() const;
+		/*! todo: doc */
+		void AddRenderLayer(class RenderLayer* layer);
+		/*! todo: doc */
+		void RemoveRenderLayer(class RenderLayer* layer);
 	};
 
 	/*!
@@ -17030,6 +17037,13 @@ namespace BinaryNinja {
 		std::vector<LinearDisassemblyLine> GetLines();
 
 		Ref<LinearViewCursor> Duplicate();
+
+		/*! todo: doc */
+		std::vector<class RenderLayer*> GetRenderLayers() const;
+		/*! todo: doc */
+		void AddRenderLayer(class RenderLayer* layer);
+		/*! todo: doc */
+		void RemoveRenderLayer(class RenderLayer* layer);
 
 		static int Compare(LinearViewCursor* a, LinearViewCursor* b);
 	};

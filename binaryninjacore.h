@@ -5120,6 +5120,10 @@ extern "C"
 	BINARYNINJACOREAPI BNLinearDisassemblyLine* BNGetLinearViewCursorLines(BNLinearViewCursor* cursor, size_t* count);
 	BINARYNINJACOREAPI int BNCompareLinearViewCursors(BNLinearViewCursor* a, BNLinearViewCursor* b);
 
+	BINARYNINJACOREAPI BNRenderLayer** BNGetLinearViewCursorRenderLayers(BNLinearViewCursor* cursor, size_t* count);
+	BINARYNINJACOREAPI void BNAddLinearViewCursorRenderLayer(BNLinearViewCursor* cursor, BNRenderLayer* layer);
+	BINARYNINJACOREAPI void BNRemoveLinearViewCursorRenderLayer(BNLinearViewCursor* cursor, BNRenderLayer* layer);
+
 	BINARYNINJACOREAPI void BNDefineDataVariable(BNBinaryView* view, uint64_t addr, BNTypeWithConfidence* type);
 	BINARYNINJACOREAPI void BNDefineUserDataVariable(BNBinaryView* view, uint64_t addr, BNTypeWithConfidence* type);
 	BINARYNINJACOREAPI void BNUndefineDataVariable(BNBinaryView* view, uint64_t addr, bool blacklist);
@@ -5550,6 +5554,10 @@ extern "C"
 	BINARYNINJACOREAPI int BNGetFlowGraphHeight(BNFlowGraph* graph);
 	BINARYNINJACOREAPI void BNFlowGraphSetWidth(BNFlowGraph* graph, int width);
 	BINARYNINJACOREAPI void BNFlowGraphSetHeight(BNFlowGraph* graph, int height);
+
+	BINARYNINJACOREAPI BNRenderLayer** BNGetFlowGraphRenderLayers(BNFlowGraph* graph, size_t* count);
+	BINARYNINJACOREAPI void BNAddFlowGraphRenderLayer(BNFlowGraph* graph, BNRenderLayer* layer);
+	BINARYNINJACOREAPI void BNRemoveFlowGraphRenderLayer(BNFlowGraph* graph, BNRenderLayer* layer);
 
 	BINARYNINJACOREAPI BNFlowGraphNode* BNCreateFlowGraphNode(BNFlowGraph* graph);
 	BINARYNINJACOREAPI BNFlowGraphNode* BNNewFlowGraphNodeReference(BNFlowGraphNode* node);

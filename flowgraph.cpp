@@ -437,6 +437,31 @@ bool FlowGraph::IsOptionSet(BNFlowGraphOption option)
 }
 
 
+std::vector<RenderLayer*> FlowGraph::GetRenderLayers() const
+{
+	size_t count = 0;
+	BNRenderLayer** layers = BNGetFlowGraphRenderLayers(m_object, &count);
+	std::vector<RenderLayer*> result;
+	for (size_t i = 0; i < count; i ++)
+	{
+		result.push_back(new CoreRenderLayer(layers[i]));
+	}
+	return result;
+}
+
+
+void FlowGraph::AddRenderLayer(RenderLayer* layer)
+{
+	BNAddFlowGraphRenderLayer(m_object, layer->GetObject());
+}
+
+
+void FlowGraph::RemoveRenderLayer(RenderLayer* layer)
+{
+	BNRemoveFlowGraphRenderLayer(m_object, layer->GetObject());
+}
+
+
 CoreFlowGraph::CoreFlowGraph(BNFlowGraph* graph) : FlowGraph(graph)
 {
 	m_queryMode = BNFlowGraphUpdateQueryMode(GetObject());

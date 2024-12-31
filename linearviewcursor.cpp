@@ -211,6 +211,31 @@ Ref<LinearViewCursor> LinearViewCursor::Duplicate()
 }
 
 
+std::vector<RenderLayer*> LinearViewCursor::GetRenderLayers() const
+{
+	size_t count = 0;
+	BNRenderLayer** layers = BNGetLinearViewCursorRenderLayers(m_object, &count);
+	std::vector<RenderLayer*> result;
+	for (size_t i = 0; i < count; i ++)
+	{
+		result.push_back(new CoreRenderLayer(layers[i]));
+	}
+	return result;
+}
+
+
+void LinearViewCursor::AddRenderLayer(RenderLayer* layer)
+{
+	BNAddLinearViewCursorRenderLayer(m_object, layer->GetObject());
+}
+
+
+void LinearViewCursor::RemoveRenderLayer(RenderLayer* layer)
+{
+	BNRemoveLinearViewCursorRenderLayer(m_object, layer->GetObject());
+}
+
+
 int LinearViewCursor::Compare(LinearViewCursor* a, LinearViewCursor* b)
 {
 	return BNCompareLinearViewCursors(a->GetObject(), b->GetObject());
