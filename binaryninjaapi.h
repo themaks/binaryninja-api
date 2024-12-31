@@ -18937,6 +18937,82 @@ namespace BinaryNinja {
 		static void AddNamesForOuterStructureMembers(
 			BinaryView* data, Type* type, const HighLevelILInstruction& var, std::vector<std::string>& nameList);
 	};
+
+	/*! todo: doc
+	 */
+	class RenderLayer: public StaticCoreRefCountObject<BNRenderLayer>
+	{
+		std::string m_nameForRegister;
+
+	protected:
+		explicit RenderLayer(const std::string& name);
+		RenderLayer(BNRenderLayer* layer);
+		virtual ~RenderLayer() = default;
+		static void ApplyToFlowGraphCallback(void* ctxt, BNFlowGraph* graph);
+		static void ApplyToLinearViewObjectCallback(
+			void* ctxt,
+			BNLinearViewObject* obj,
+			BNLinearViewObject* prev,
+			BNLinearViewObject* next,
+			BNLinearDisassemblyLine* inLines,
+			size_t inLineCount,
+			BNLinearDisassemblyLine** outLines,
+			size_t* outLineCount
+		);
+		static void FreeLinesCallback(void* ctxt, BNLinearDisassemblyLine* lines, size_t count);
+
+	public:
+		/*! todo: doc
+		*/
+		static void Register(RenderLayer* layer);
+		/*! todo: doc
+		*/
+		static std::vector<Ref<RenderLayer>> GetList();
+		/*! todo: doc
+		*/
+		static Ref<RenderLayer> GetByName(const std::string& name);
+
+		/*! todo: doc
+		*/
+		std::string GetName() const;
+
+		/*! todo: doc
+		*/
+		virtual void ApplyToFlowGraph(Ref<FlowGraph> graph)
+		{
+			(void)graph;
+		}
+
+		/*! todo: doc
+		*/
+		virtual void ApplyToLinearViewObject(
+			Ref<LinearViewObject> obj,
+			Ref<LinearViewObject> prev,
+			Ref<LinearViewObject> next,
+			std::vector<LinearDisassemblyLine>& lines
+		)
+		{
+			(void)obj;
+			(void)prev;
+			(void)next;
+			(void)lines;
+		}
+	};
+
+	class CoreRenderLayer: public RenderLayer
+	{
+	public:
+		CoreRenderLayer(BNRenderLayer* layer);
+		virtual ~CoreRenderLayer() = default;
+
+		virtual void ApplyToFlowGraph(Ref<FlowGraph> graph) override;
+		virtual void ApplyToLinearViewObject(
+			Ref<LinearViewObject> obj,
+			Ref<LinearViewObject> prev,
+			Ref<LinearViewObject> next,
+			std::vector<LinearDisassemblyLine>& lines
+		) override;
+	};
 }  // namespace BinaryNinja
 
 

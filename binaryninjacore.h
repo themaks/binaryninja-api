@@ -3542,6 +3542,18 @@ extern "C"
 	typedef struct BNRenderLayerCallbacks
 	{
 		void* context;
+		void (*applyToFlowGraph)(void* ctxt, BNFlowGraph* graph);
+		void (*applyToLinearViewObject)(
+			void* ctxt,
+			BNLinearViewObject* obj,
+			BNLinearViewObject* prev,
+			BNLinearViewObject* next,
+			BNLinearDisassemblyLine* inLines,
+			size_t inLineCount,
+			BNLinearDisassemblyLine** outLines,
+			size_t* outLineCount
+		);
+		void (*freeLines)(void* ctxt, BNLinearDisassemblyLine* lines, size_t count);
 	} BNRenderLayerCallbacks;
 
 	BINARYNINJACOREAPI char* BNAllocString(const char* contents);
@@ -8073,6 +8085,18 @@ extern "C"
 	BINARYNINJACOREAPI void BNFreeRenderLayerList(BNRenderLayer** renderLayers);
 	BINARYNINJACOREAPI BNRenderLayer* BNGetRenderLayerByName(const char* name);
 	BINARYNINJACOREAPI char* BNGetRenderLayerName(BNRenderLayer* renderLayer);
+
+	BINARYNINJACOREAPI void BNApplyRenderLayerToFlowGraph(BNRenderLayer* renderLayer, BNFlowGraph* graph);
+	BINARYNINJACOREAPI void BNApplyRenderLayerToLinearViewObject(
+		BNRenderLayer* renderLayer,
+		BNLinearViewObject* obj,
+		BNLinearViewObject* prev,
+		BNLinearViewObject* next,
+		BNLinearDisassemblyLine* inLines,
+		size_t inLineCount,
+		BNLinearDisassemblyLine** outLines,
+		size_t* outLineCount
+	);
 
 #ifdef __cplusplus
 }
