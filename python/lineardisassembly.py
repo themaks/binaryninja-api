@@ -43,6 +43,29 @@ class LinearDisassemblyLine:
 	def __str__(self):
 		return str(self.contents)
 
+	@classmethod
+	def _from_core_struct(cls, struct: core.BNLinearDisassemblyLine) -> 'LinearDisassemblyLine':
+		function = None
+		if struct.function:
+			function = _function.Function(handle=core.BNNewFunctionReference(struct.function))
+		block = None
+		if struct.block:
+			block = basicblock.BasicBlock(handle=core.BNNewBasicBlockReference(struct.block))
+		contents = _function.DisassemblyTextLine._from_core_struct(struct.contents)
+		return LinearDisassemblyLine(struct.type, function, block, contents)
+
+	def _to_core_struct(self) -> core.BNLinearDisassemblyLine:
+		result = core.BNLinearDisassemblyLine()
+		result.type = self.type
+		result.function = None
+		if self.function is not None:
+			result.function = self.function.handle
+		result.block = None
+		if self.block is not None:
+			result.block = self.block.handle
+		result.contents = _function.DisassemblyTextLine._to_core_struct(self.contents)
+		return result
+
 
 class LinearViewObjectIdentifier:
 	def __init__(self, name, start=None, end=None):
