@@ -156,30 +156,7 @@ class FlowGraphNode:
 		block = core.BNGetFlowGraphBasicBlock(self.handle)
 		if not block:
 			return None
-		func_handle = core.BNGetBasicBlockFunction(block)
-		if not func_handle:
-			core.BNFreeBasicBlock(block)
-			return None
-
-		view = binaryview.BinaryView(handle=core.BNGetFunctionData(func_handle))
-		func = function.Function(view, func_handle)
-
-		if core.BNIsLowLevelILBasicBlock(block):
-			block = lowlevelil.LowLevelILBasicBlock(
-			    block, lowlevelil.LowLevelILFunction(func.arch, core.BNGetBasicBlockLowLevelILFunction(block), func),
-			    view
-			)
-		elif core.BNIsMediumLevelILBasicBlock(block):
-			mlil_func = mediumlevelil.MediumLevelILFunction(
-			    func.arch, core.BNGetBasicBlockMediumLevelILFunction(block), func
-			)
-			block = mediumlevelil.MediumLevelILBasicBlock(block, mlil_func, view)
-		elif core.BNIsHighLevelILBasicBlock(block):
-			hlil_func = highlevelil.HighLevelILFunction(func.arch, core.BNGetBasicBlockHighLevelILFunction(block), func)
-			block = highlevelil.HighLevelILBasicBlock(block, hlil_func, view)
-		else:
-			block = basicblock.BasicBlock(block, view)
-		return block
+		return basicblock.BasicBlock._from_core_block(block)
 
 	@basic_block.setter
 	def basic_block(self, block):

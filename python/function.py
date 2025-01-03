@@ -3424,7 +3424,7 @@ class DisassemblyTextRenderer:
 	def basic_block(self) -> Optional['basicblock.BasicBlock']:
 		result = core.BNGetDisassemblyTextRendererBasicBlock(self.handle)
 		if result:
-			return basicblock.BasicBlock(handle=result)
+			return basicblock.BasicBlock._from_core_block(handle=result)
 		return None
 
 	@basic_block.setter

@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from typing import Generator, Optional, List, Tuple
 
 # Binary Ninja components
+import binaryninja
 from . import _binaryninjacore as core
 from .enums import BranchType, HighlightStandardColor
 from . import binaryview
@@ -87,6 +88,33 @@ class BasicBlock:
 	def __del__(self):
 		if core is not None:
 			core.BNFreeBasicBlock(self.handle)
+
+	@classmethod
+	def _from_core_block(cls, block: core.BNBasicBlockHandle) -> Optional['BasicBlock']:
+		"""From a BNBasicBlockHandle, get a BasicBlock or one of the IL subclasses (takes ref)"""
+		func_handle = core.BNGetBasicBlockFunction(block)
+		if not func_handle:
+			core.BNFreeBasicBlock(block)
+			return None
+
+		view = binaryview.BinaryView(handle=core.BNGetFunctionData(func_handle))
+		func = _function.Function(view, func_handle)
+
+		if core.BNIsLowLevelILBasicBlock(block):
+			return binaryninja.lowlevelil.LowLevelILBasicBlock(
+				block, binaryninja.lowlevelil.LowLevelILFunction(func.arch, core.BNGetBasicBlockLowLevelILFunction(block), func),
+				view
+			)
+		elif core.BNIsMediumLevelILBasicBlock(block):
+			mlil_func = binaryninja.mediumlevelil.MediumLevelILFunction(
+				func.arch, core.BNGetBasicBlockMediumLevelILFunction(block), func
+			)
+			return binaryninja.mediumlevelil.MediumLevelILBasicBlock(block, mlil_func, view)
+		elif core.BNIsHighLevelILBasicBlock(block):
+			hlil_func = binaryninja.highlevelil.HighLevelILFunction(func.arch, core.BNGetBasicBlockHighLevelILFunction(block), func)
+			return binaryninja.highlevelil.HighLevelILBasicBlock(block, hlil_func, view)
+		else:
+			return BasicBlock(block, view)
 
 	def __repr__(self):
 		arch = self.arch

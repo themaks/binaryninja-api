@@ -50,7 +50,7 @@ class LinearDisassemblyLine:
 			function = _function.Function(handle=core.BNNewFunctionReference(struct.function))
 		block = None
 		if struct.block:
-			block = basicblock.BasicBlock(handle=core.BNNewBasicBlockReference(struct.block))
+			block = basicblock.BasicBlock._from_core_block(core.BNNewBasicBlockReference(struct.block))
 		contents = _function.DisassemblyTextLine._from_core_struct(struct.contents)
 		return LinearDisassemblyLine(struct.type, function, block, contents)
 
