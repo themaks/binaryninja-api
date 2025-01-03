@@ -103,7 +103,7 @@ class RenderLayer(metaclass=_RenderLayerMetaclass):
 
 	def _apply_to_linear_view_object(self, ctxt, obj, prev, next, in_lines, in_line_count, out_lines, out_line_count):
 		try:
-			obj_obj = binaryninja.LinearViewObject(core.BNNewLinearViewObjectReference(obj)) if obj else None
+			obj_obj = binaryninja.LinearViewObject(core.BNNewLinearViewObjectReference(obj))
 			prev_obj = binaryninja.LinearViewObject(core.BNNewLinearViewObjectReference(prev)) if prev else None
 			next_obj = binaryninja.LinearViewObject(core.BNNewLinearViewObjectReference(next)) if next else None
 
@@ -147,8 +147,8 @@ class RenderLayer(metaclass=_RenderLayerMetaclass):
 	def apply_to_linear_view_object(
 			self,
 			obj: 'binaryninja.LinearViewObject',
-			prev: 'binaryninja.LinearViewObject',
-			next: 'binaryninja.LinearViewObject',
+			prev: Optional['binaryninja.LinearViewObject'],
+			next: Optional['binaryninja.LinearViewObject'],
 			lines: List['binaryninja.LinearDisassemblyLine']
 	) -> List['binaryninja.LinearDisassemblyLine']:
 		"""
@@ -172,8 +172,8 @@ class CoreRenderLayer(RenderLayer):
 	def apply_to_linear_view_object(
 			self,
 			obj: 'binaryninja.LinearViewObject',
-			prev: 'binaryninja.LinearViewObject',
-			next: 'binaryninja.LinearViewObject',
+			prev: Optional['binaryninja.LinearViewObject'],
+			next: Optional['binaryninja.LinearViewObject'],
 			lines: List['binaryninja.LinearDisassemblyLine']
 	) -> List['binaryninja.LinearDisassemblyLine']:
 
@@ -186,7 +186,7 @@ class CoreRenderLayer(RenderLayer):
 
 		core.BNApplyRenderLayerToLinearViewObject(
 			self.handle,
-			obj.handle if obj is not None else None,
+			obj.handle,
 			prev.handle if prev is not None else None,
 			next.handle if next is not None else None,
 			in_lines_buf,
