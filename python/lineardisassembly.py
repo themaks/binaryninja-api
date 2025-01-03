@@ -660,3 +660,48 @@ class LinearViewCursor:
 	@staticmethod
 	def compare(a, b):
 		return core.BNCompareLinearViewCursors(a.handle, b.handle)
+
+	@property
+	def render_layers(self) -> List['binaryninja.RenderLayer']:
+		"""
+		Get the list of Render Layers which will be applied to this cursor, at the
+		end of calls to lines().
+
+		:return: List of Render Layers
+		"""
+		count = ctypes.c_size_t(0)
+		layers = core.BNGetLinearViewCursorRenderLayers(self.handle, count)
+		assert layers is not None, "core.BNGetLinearViewCursorRenderLayers returned None"
+
+		try:
+			result = []
+			for i in range(0, count.value):
+				result.append(binaryninja.RenderLayer(handle=layers[i]))
+
+			return result
+		finally:
+			core.BNFreeRenderLayerList(layers)
+
+	@render_layers.setter
+	def render_layers(self, render_layers: List['binaryninja.RenderLayer']):
+		for layer in self.render_layers:
+			self.remove_render_layer(layer)
+		for layer in render_layers:
+			self.add_render_layer(layer)
+
+	def add_render_layer(self, layer: 'binaryninja.RenderLayer'):
+		"""
+		Add a Render Layer to be applied to this cursor. Note that layers will
+		be applied in the order in which they are added.
+
+		:param layer: Render Layer to add
+		"""
+		core.BNAddLinearViewCursorRenderLayer(self.handle, layer.handle)
+
+	def remove_render_layer(self, layer: 'binaryninja.RenderLayer'):
+		"""
+		Remove a Render Layer from being applied to this cursor
+
+		:param layer: Render Layer to remove
+		"""
+		core.BNRemoveLinearViewCursorRenderLayer(self.handle, layer.handle)

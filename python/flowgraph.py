@@ -874,6 +874,50 @@ class FlowGraph:
 	def is_option_set(self, option):
 		return core.BNIsFlowGraphOptionSet(self.handle, option)
 
+	@property
+	def render_layers(self) -> List['binaryninja.RenderLayer']:
+		"""
+		Get the list of Render Layers which will be applied to this Flow Graph,
+		after it calls populate_nodes.
+		:return: List of Render Layers
+		"""
+		count = ctypes.c_size_t(0)
+		layers = core.BNGetFlowGraphRenderLayers(self.handle, count)
+		assert layers is not None, "core.BNGetFlowGraphRenderLayers returned None"
+
+		try:
+			result = []
+			for i in range(0, count.value):
+				result.append(binaryninja.RenderLayer(handle=layers[i]))
+
+			return result
+		finally:
+			core.BNFreeRenderLayerList(layers)
+
+	@render_layers.setter
+	def render_layers(self, render_layers: List['binaryninja.RenderLayer']):
+		for layer in self.render_layers:
+			self.remove_render_layer(layer)
+		for layer in render_layers:
+			self.add_render_layer(layer)
+
+	def add_render_layer(self, layer: 'binaryninja.RenderLayer'):
+		"""
+		Add a Render Layer to be applied to this Flow Graph. Note that layers will
+		be applied in the order in which they are added.
+
+		:param layer: Render Layer to add
+		"""
+		core.BNAddFlowGraphRenderLayer(self.handle, layer.handle)
+
+	def remove_render_layer(self, layer: 'binaryninja.RenderLayer'):
+		"""
+		Remove a Render Layer from being applied to this Flow Graph
+
+		:param layer: Render Layer to remove
+		"""
+		core.BNRemoveFlowGraphRenderLayer(self.handle, layer.handle)
+
 
 class CoreFlowGraph(FlowGraph):
 	def __init__(self, handle):
