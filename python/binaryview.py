@@ -9008,24 +9008,6 @@ to a the type "tagRECT" found in the typelibrary "winX64common"
 
 			return self.QueueGenerator(t, results)
 
-	def _LinearDisassemblyLine_convertor(
-	    self, lines: core.BNLinearDisassemblyLineHandle
-	) -> 'lineardisassembly.LinearDisassemblyLine':
-		func = None
-		block = None
-		line = lines[0]
-		if line.function:
-			func = _function.Function(self, core.BNNewFunctionReference(line.function))
-		if line.block:
-			block_handle = core.BNNewBasicBlockReference(line.block)
-			assert block_handle is not None, "core.BNNewBasicBlockReference returned None"
-			block = basicblock.BasicBlock(block_handle, self)
-		color = highlight.HighlightColor._from_core_struct(line.contents.highlight)
-		addr = line.contents.addr
-		tokens = _function.InstructionTextToken._from_core_struct(line.contents.tokens, line.contents.count)
-		contents = _function.DisassemblyTextLine(tokens, addr, color=color)
-		return lineardisassembly.LinearDisassemblyLine(line.type, func, block, contents)
-
 	def find_all_text(
 	    self, start: int, end: int, text: str, settings: Optional[_function.DisassemblySettings] = None,
 	    flags=FindFlag.FindCaseSensitive, graph_type: _function.FunctionViewTypeOrName = FunctionGraphType.NormalFunctionGraph, progress_func=None,
@@ -9094,7 +9076,7 @@ to a the type "tagRECT" found in the typelibrary "winX64common"
 			    ctypes.POINTER(core.BNLinearDisassemblyLine)
 			)(
 			    lambda ctxt, addr, match, line:
-			    not match_callback(addr, match, self._LinearDisassemblyLine_convertor(line)) is False
+			    not match_callback(addr, match, lineardisassembly.LinearDisassemblyLine._from_core_struct(line)) is False
 			)
 
 			return core.BNFindAllTextWithProgress(
@@ -9107,7 +9089,7 @@ to a the type "tagRECT" found in the typelibrary "winX64common"
 			    ctypes.c_bool, ctypes.c_void_p, ctypes.c_ulonglong, ctypes.c_char_p,
 			    ctypes.POINTER(core.BNLinearDisassemblyLine)
 			)(
-			    lambda ctxt, addr, match, line: results.put((addr, match, self._LinearDisassemblyLine_convertor(line)))
+			    lambda ctxt, addr, match, line: results.put((addr, match, lineardisassembly.LinearDisassemblyLine._from_core_struct(line)))
 			    or True
 			)
 
@@ -9176,7 +9158,7 @@ to a the type "tagRECT" found in the typelibrary "winX64common"
 		if match_callback:
 			match_callback_obj = ctypes.CFUNCTYPE(
 			    ctypes.c_bool, ctypes.c_void_p, ctypes.c_ulonglong, ctypes.POINTER(core.BNLinearDisassemblyLine)
-			)(lambda ctxt, addr, line: not match_callback(addr, self._LinearDisassemblyLine_convertor(line)) is False)
+			)(lambda ctxt, addr, line: not match_callback(addr, lineardisassembly.LinearDisassemblyLine._from_core_struct(line)) is False)
 
 			return core.BNFindAllConstantWithProgress(
 			    self.handle, start, end, constant, settings.handle, graph_type, None, progress_func_obj, None,
@@ -9186,7 +9168,7 @@ to a the type "tagRECT" found in the typelibrary "winX64common"
 			results = queue.Queue()
 			match_callback_obj = ctypes.CFUNCTYPE(
 			    ctypes.c_bool, ctypes.c_void_p, ctypes.c_ulonglong, ctypes.POINTER(core.BNLinearDisassemblyLine)
-			)(lambda ctxt, addr, line: results.put((addr, self._LinearDisassemblyLine_convertor(line))) or True)
+			)(lambda ctxt, addr, line: results.put((addr, lineardisassembly.LinearDisassemblyLine._from_core_struct(line))) or True)
 
 			t = threading.Thread(
 			    target=lambda: core.BNFindAllConstantWithProgress(
