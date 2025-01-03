@@ -220,6 +220,7 @@ std::vector<RenderLayer*> LinearViewCursor::GetRenderLayers() const
 	{
 		result.push_back(new CoreRenderLayer(layers[i]));
 	}
+	BNFreeRenderLayerList(layers);
 	return result;
 }
 

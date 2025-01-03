@@ -446,6 +446,7 @@ std::vector<RenderLayer*> FlowGraph::GetRenderLayers() const
 	{
 		result.push_back(new CoreRenderLayer(layers[i]));
 	}
+	BNFreeRenderLayerList(layers);
 	return result;
 }
 
