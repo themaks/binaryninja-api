@@ -11566,11 +11566,24 @@ namespace BinaryNinja {
 		void SetOption(BNFlowGraphOption option, bool value = true);
 		bool IsOptionSet(BNFlowGraphOption option);
 
-		/*! todo: doc */
+		/*! Get the list of Render Layers which will be applied to this Flow Graph,
+			after it calls PopulateNodes.
+
+			\return List of Render Layers
+		 */
 		std::vector<class RenderLayer*> GetRenderLayers() const;
-		/*! todo: doc */
+
+		/*! Add a Render Layer to be applied to this Flow Graph. Note that layers will
+			be applied in the order in which they are added.
+
+			\param layer Render Layer to add
+		 */
 		void AddRenderLayer(class RenderLayer* layer);
-		/*! todo: doc */
+
+		/*! Remove a Render Layer from being applied to this Flow Graph
+
+			\param layer Render Layer to remove
+		 */
 		void RemoveRenderLayer(class RenderLayer* layer);
 	};
 
@@ -17038,11 +17051,24 @@ namespace BinaryNinja {
 
 		Ref<LinearViewCursor> Duplicate();
 
-		/*! todo: doc */
+		/*! Get the list of Render Layers which will be applied to this cursor, at the
+			end of calls to GetLines.
+
+			\return List of Render Layers
+		 */
 		std::vector<class RenderLayer*> GetRenderLayers() const;
-		/*! todo: doc */
+
+		/*! Add a Render Layer to be applied to this cursor. Note that layers will
+			be applied in the order in which they are added.
+
+			\param layer Render Layer to add
+		 */
 		void AddRenderLayer(class RenderLayer* layer);
-		/*! todo: doc */
+
+		/*! Remove a Render Layer from being applied to this cursor
+
+			\param layer Render Layer to remove
+		 */
 		void RemoveRenderLayer(class RenderLayer* layer);
 
 		static int Compare(LinearViewCursor* a, LinearViewCursor* b);
@@ -18952,7 +18978,9 @@ namespace BinaryNinja {
 			BinaryView* data, Type* type, const HighLevelILInstruction& var, std::vector<std::string>& nameList);
 	};
 
-	/*! todo: doc
+	/*! RenderLayer is a plugin class that allows you to customize the presentation of
+		Linear and Graph view output, adding, changing, or removing lines before they are
+		presented in the UI.
 	 */
 	class RenderLayer: public StaticCoreRefCountObject<BNRenderLayer>
 	{
@@ -18976,28 +19004,49 @@ namespace BinaryNinja {
 		static void FreeLinesCallback(void* ctxt, BNLinearDisassemblyLine* lines, size_t count);
 
 	public:
-		/*! todo: doc
+		/*! Register a custom Render Layer.
+
+			\param layer Render Layer to register
 		*/
 		static void Register(RenderLayer* layer);
-		/*! todo: doc
+
+		/*! Get the list of all currently registered Render Layers.
+
+			\return List of Render Layers
 		*/
 		static std::vector<Ref<RenderLayer>> GetList();
-		/*! todo: doc
+
+		/*! Look up a Render Layer by its name
+
+			\param name Name of Render Layer
+			\return Render Layer, if it exists. Otherwise, nullptr.
 		*/
 		static Ref<RenderLayer> GetByName(const std::string& name);
 
-		/*! todo: doc
+		/*! Get the name of a Render Layer
+
+			\return Render Layer's name
 		*/
 		std::string GetName() const;
 
-		/*! todo: doc
+		/*! Apply this Render Layer to a Flow Graph, potentially modifying its nodes,
+			their edges, their lines, and their lines' content.
+
+			\param graph Graph to modify
 		*/
 		virtual void ApplyToFlowGraph(Ref<FlowGraph> graph)
 		{
 			(void)graph;
 		}
 
-		/*! todo: doc
+		/*! Apply this Render Layer to the lines produced by a LinearViewObject for rendering
+			in Linear View, potentially modifying the lines and their contents.
+
+			\param obj Linear View Object being rendered
+			\param prev Linear View Object located directly above this one
+			\param next Linear View Object located directly below this one
+			\param lines Lines originally rendered by the Linear View Object
+			\return Updated set of lines to display in Linear View
 		*/
 		virtual void ApplyToLinearViewObject(
 			Ref<LinearViewObject> obj,

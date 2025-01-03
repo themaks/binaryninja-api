@@ -50,7 +50,9 @@ class _RenderLayerMetaclass(type):
 
 class RenderLayer(metaclass=_RenderLayerMetaclass):
 	"""
-	todo: doc
+	RenderLayer is a plugin class that allows you to customize the presentation of
+	Linear and Graph view output, adding, changing, or removing lines before they are
+	presented in the UI.
 	"""
 
 	name = None
@@ -134,6 +136,12 @@ class RenderLayer(metaclass=_RenderLayerMetaclass):
 			log_error(traceback.format_exc())
 
 	def apply_to_flow_graph(self, graph: 'binaryninja.FlowGraph') -> None:
+		"""
+		Apply this Render Layer to a Flow Graph, potentially modifying its nodes,
+		their edges, their lines, and their lines' content.
+
+		:param graph: Graph to modify
+		"""
 		pass
 
 	def apply_to_linear_view_object(
@@ -143,6 +151,16 @@ class RenderLayer(metaclass=_RenderLayerMetaclass):
 			next: 'binaryninja.LinearViewObject',
 			lines: List['binaryninja.LinearDisassemblyLine']
 	) -> List['binaryninja.LinearDisassemblyLine']:
+		"""
+		Apply this Render Layer to the lines produced by a LinearViewObject for rendering
+		in Linear View, potentially modifying the lines and their contents.
+
+		:param obj: Linear View Object being rendered
+		:param prev: Linear View Object located directly above this one
+		:param next: Linear View Object located directly below this one
+		:param lines: Lines originally rendered by the Linear View Object
+		:return: Updated set of lines to display in Linear View
+		"""
 		return lines
 
 
