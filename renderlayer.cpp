@@ -58,7 +58,7 @@ void RenderLayer::ApplyToLinearViewObjectCallback(
 	vector<LinearDisassemblyLine> lines = ParseAPIObjectList<LinearDisassemblyLine>(inLines, inLineCount);
 
 	layer->ApplyToLinearViewObject(
-		obj ? new LinearViewObject(BNNewLinearViewObjectReference(obj)) : nullptr,
+		new LinearViewObject(BNNewLinearViewObjectReference(obj)),
 		prev ? new LinearViewObject(BNNewLinearViewObjectReference(prev)) : nullptr,
 		next ? new LinearViewObject(BNNewLinearViewObjectReference(next)) : nullptr,
 		lines
@@ -142,7 +142,7 @@ void CoreRenderLayer::ApplyToLinearViewObject(
 
 	BNApplyRenderLayerToLinearViewObject(
 		m_object,
-		obj ? obj->GetObject() : nullptr,
+		obj->GetObject(),
 		prev ? prev->GetObject() : nullptr,
 		next ? next->GetObject() : nullptr,
 		inLines,
