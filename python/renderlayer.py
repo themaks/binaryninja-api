@@ -109,7 +109,7 @@ class RenderLayer(metaclass=_RenderLayerMetaclass):
 
 			lines = []
 			for i in range(in_line_count):
-				lines.append(LinearDisassemblyLine._from_core_struct(in_lines[i]))
+				lines.append(LinearDisassemblyLine._from_core_struct(in_lines[i], obj=obj_obj))
 
 			lines = self.apply_to_linear_view_object(obj_obj, prev_obj, next_obj, lines)
 
@@ -197,7 +197,7 @@ class CoreRenderLayer(RenderLayer):
 
 		result = []
 		for i in range(out_line_count.value):
-			result.append(binaryninja.LinearDisassemblyLine._from_core_struct(out_lines[i]))
+			result.append(binaryninja.LinearDisassemblyLine._from_core_struct(out_lines[i], obj=obj))
 
 		core.BNFreeLinearDisassemblyLines(out_lines, out_line_count.value)
 

@@ -239,6 +239,78 @@ class BasicBlock:
 		return self._func
 
 	@property
+	def il_function(self) -> Optional['_function.ILFunctionType']:
+		"""IL Function of which this block is a part, if the block is part of an IL Function."""
+		func = self.function
+		if func is None:
+			return None
+		il_type = self.function_graph_type
+		if il_type == _function.FunctionGraphType.NormalFunctionGraph:
+			return None
+		elif il_type == _function.FunctionGraphType.LowLevelILFunctionGraph:
+			return func.low_level_il
+		elif il_type == _function.FunctionGraphType.LiftedILFunctionGraph:
+			return func.lifted_il
+		elif il_type == _function.FunctionGraphType.LowLevelILSSAFormFunctionGraph:
+			return func.low_level_il.ssa_form
+		elif il_type == _function.FunctionGraphType.MediumLevelILFunctionGraph:
+			return func.medium_level_il
+		elif il_type == _function.FunctionGraphType.MediumLevelILSSAFormFunctionGraph:
+			return func.medium_level_il.ssa_form
+		elif il_type == _function.FunctionGraphType.MappedMediumLevelILFunctionGraph:
+			return func.mapped_medium_level_il
+		elif il_type == _function.FunctionGraphType.MappedMediumLevelILSSAFormFunctionGraph:
+			return func.mapped_medium_level_il.ssa_form
+		elif il_type == _function.FunctionGraphType.HighLevelILFunctionGraph:
+			return func.high_level_il
+		elif il_type == _function.FunctionGraphType.HighLevelILSSAFormFunctionGraph:
+			return func.high_level_il.ssa_form
+		elif il_type == _function.FunctionGraphType.HighLevelLanguageRepresentationFunctionGraph:
+			return func.high_level_il
+		else:
+			return None
+
+	@property
+	def il_function_if_available(self) -> Optional['_function.ILFunctionType']:
+		"""IL Function of which this block is a part, if the block is part of an IL Function, and if the function has generated IL already."""
+		func = self.function
+		if func is None:
+			return None
+		il_type = self.function_graph_type
+		if il_type == _function.FunctionGraphType.NormalFunctionGraph:
+			return None
+		elif il_type == _function.FunctionGraphType.LowLevelILFunctionGraph:
+			return func.llil_if_available
+		elif il_type == _function.FunctionGraphType.LiftedILFunctionGraph:
+			return func.lifted_il_if_available
+		elif il_type == _function.FunctionGraphType.LowLevelILSSAFormFunctionGraph:
+			if func.llil_if_available is None:
+				return None
+			return func.llil_if_available.ssa_form
+		elif il_type == _function.FunctionGraphType.MediumLevelILFunctionGraph:
+			return func.mlil_if_available
+		elif il_type == _function.FunctionGraphType.MediumLevelILSSAFormFunctionGraph:
+			if func.mlil_if_available is None:
+				return None
+			return func.mlil_if_available.ssa_form
+		elif il_type == _function.FunctionGraphType.MappedMediumLevelILFunctionGraph:
+			return func.mmlil_if_available
+		elif il_type == _function.FunctionGraphType.MappedMediumLevelILSSAFormFunctionGraph:
+			if func.mmlil_if_available is None:
+				return None
+			return func.mmlil_if_available.ssa_form
+		elif il_type == _function.FunctionGraphType.HighLevelILFunctionGraph:
+			return func.hlil_if_available
+		elif il_type == _function.FunctionGraphType.HighLevelILSSAFormFunctionGraph:
+			if func.hlil_if_available is None:
+				return None
+			return func.hlil_if_available.ssa_form
+		elif il_type == _function.FunctionGraphType.HighLevelLanguageRepresentationFunctionGraph:
+			return func.hlil_if_available
+		else:
+			return None
+
+	@property
 	def view(self) -> Optional['binaryview.BinaryView']:
 		"""BinaryView that contains the basic block (read-only)"""
 		if self._view is not None:
@@ -452,6 +524,11 @@ class BasicBlock:
 	@highlight.setter
 	def highlight(self, value: '_highlight.HighlightColor') -> None:
 		self.set_user_highlight(value)
+
+	@property
+	def function_graph_type(self) -> '_function.FunctionGraphType':
+		"""Type of function graph from which this block represents instructions"""
+		return _function.FunctionGraphType(core.BNGetBasicBlockFunctionGraphType(self.handle))
 
 	@property
 	def is_il(self) -> bool:
