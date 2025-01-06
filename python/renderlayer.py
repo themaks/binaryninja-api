@@ -24,10 +24,12 @@ import traceback
 # Binary Ninja components
 import binaryninja
 from . import _binaryninjacore as core, LinearDisassemblyLine
+from .enums import LinearDisassemblyLineType
 from . import binaryview
 from . import types
 from .log import log_error
 from typing import Iterable, List, Optional, Union, Tuple
+
 
 class _RenderLayerMetaclass(type):
 	def __iter__(self):
@@ -48,11 +50,16 @@ class _RenderLayerMetaclass(type):
 		return CoreRenderLayer(handle)
 
 
-class RenderLayer(metaclass=_RenderLayerMetaclass):
+class BaseRenderLayer(metaclass=_RenderLayerMetaclass):
 	"""
 	RenderLayer is a plugin class that allows you to customize the presentation of
 	Linear and Graph view output, adding, changing, or removing lines before they are
 	presented in the UI.
+
+	BaseRenderLayer provides a lower-level interface for manipulating the graphs
+	and lines directly, whereas RenderLayer provides an interface where you can
+	choose to target a specific IL level or a couple different Linear View specific
+	line constructs.
 	"""
 
 	name = None
@@ -164,7 +171,7 @@ class RenderLayer(metaclass=_RenderLayerMetaclass):
 		return lines
 
 
-class CoreRenderLayer(RenderLayer):
+class CoreRenderLayer(BaseRenderLayer):
 
 	def apply_to_flow_graph(self, graph: 'binaryninja.FlowGraph') -> None:
 		core.BNApplyRenderLayerToFlowGraph(self.handle, graph.handle)
@@ -202,3 +209,217 @@ class CoreRenderLayer(RenderLayer):
 		core.BNFreeLinearDisassemblyLines(out_lines, out_line_count.value)
 
 		return result
+
+
+class RenderLayer(BaseRenderLayer):
+	"""
+	RenderLayer is a plugin class that allows you to customize the presentation of
+	Linear and Graph view output, adding, changing, or removing lines before they are
+	presented in the UI.
+
+	BaseRenderLayer provides a lower-level interface for manipulating the graphs
+	and lines directly, whereas RenderLayer provides an interface where you can
+	choose to target a specific IL level or a couple different Linear View specific
+	line constructs.
+	"""
+
+	def apply_to_disassembly_block(
+			self,
+			block: 'binaryninja.BasicBlock',
+			lines: List['binaryninja.DisassemblyTextLine']
+	):
+		"""
+		Apply this Render Layer to a single Basic Block of Disassembly lines.
+		Subclasses should modify the input `lines` list to make modifications to
+		the presentation of the block.
+
+		.. note:: This function will only handle Disassembly lines, and not any ILs.
+
+		:param block: Basic Block containing those lines
+		:param lines: Lines of text for the block, to be modified by this function
+		"""
+		pass
+
+	def apply_to_low_level_il_block(
+			self,
+			block: 'binaryninja.LowLevelILBasicBlock',
+			lines: List['binaryninja.DisassemblyTextLine']
+	):
+		"""
+		Apply this Render Layer to a single Basic Block of Low Level IL lines.
+		Subclasses should modify the input `lines` list to make modifications to
+		the presentation of the block.
+
+		.. note:: This function will only handle Lifted IL/LLIL/LLIL(SSA) lines.
+		You can use the block's `function_graph_type` property to determine which is being handled.
+
+		:param block: Basic Block containing those lines
+		:param lines: Lines of text for the block, to be modified by this function
+		"""
+		pass
+
+	def apply_to_medium_level_il_block(
+			self,
+			block: 'binaryninja.MediumLevelILBasicBlock',
+			lines: List['binaryninja.DisassemblyTextLine']
+	):
+		"""
+		Apply this Render Layer to a single Basic Block of Medium Level IL lines.
+		Subclasses should modify the input `lines` list to make modifications to
+		the presentation of the block.
+
+		.. note:: This function will only handle MLIL/MLIL(SSA)/Mapped MLIL/Mapped MLIL(SSA) lines.
+		You can use the block's `function_graph_type` property to determine which is being handled.
+
+		:param block: Basic Block containing those lines
+		:param lines: Lines of text for the block, to be modified by this function
+		"""
+		pass
+
+	def apply_to_high_level_il_block(
+			self,
+			block: 'binaryninja.HighLevelILBasicBlock',
+			lines: List['binaryninja.DisassemblyTextLine']
+	):
+		"""
+		Apply this Render Layer to a single Basic Block of High Level IL lines.
+		Subclasses should modify the input `lines` list to make modifications to
+		the presentation of the block.
+
+		.. note:: This function will only handle HLIL/HLIL(SSA)/Language Representation lines.
+		You can use the block's `function_graph_type` property to determine which is being handled.
+
+		.. warning:: This function will NOT apply to High Level IL bodies as displayed
+		in Linear View! Those are handled by `apply_to_hlil_body` instead as they
+		do not have a Basic Block associated with them.
+
+		:param block: Basic Block containing those lines
+		:param lines: Lines of text for the block, to be modified by this function
+		"""
+		pass
+
+	def apply_to_hlil_body(
+			self,
+			function: 'binaryninja.Function',
+			lines: List['binaryninja.LinearDisassemblyLine']
+	):
+		"""
+		Apply this Render Layer to the entire body of a High Level IL function.
+		Subclasses should modify the input `lines` list to make modifications to
+		the presentation of the function.
+
+		.. warning:: This function only applies to Linear View, and not to Graph View!
+		If you want to handle Graph View too, you will need to use `apply_to_high_level_il_block`
+		and handle the lines one block at a time.
+
+		:param function: Function containing those lines
+		:param lines: Lines of text for the function, to be modified by this function
+		"""
+		pass
+
+	def apply_to_misc_linear_lines(
+			self,
+			obj: 'binaryninja.LinearViewObject',
+			prev: Optional['binaryninja.LinearViewObject'],
+			next: Optional['binaryninja.LinearViewObject'],
+			lines: List['binaryninja.LinearDisassemblyLine']
+	):
+		"""
+		Apply to lines generated by Linear View that are not part of a function.
+		It is up to your implementation to figure out which type of Linear View Object
+		lines these are, and what to do with them.
+
+		:param obj: Linear View Object being rendered
+		:param prev: Linear View Object located directly above this one
+		:param next: Linear View Object located directly below this one
+		:param lines: Lines rendered by `obj`, to be modified by this functino
+		"""
+		pass
+
+	def apply_to_block(
+			self,
+			block: 'binaryninja.BasicBlock',
+			lines: List['binaryninja.DisassemblyTextLine'],
+	):
+		"""
+
+		"""
+		if not block.is_il:
+			self.apply_to_disassembly_block(block, lines)
+		elif block.is_low_level_il:
+			self.apply_to_low_level_il_block(block, lines)
+		elif block.is_medium_level_il:
+			self.apply_to_medium_level_il_block(block, lines)
+		elif block.is_high_level_il:
+			self.apply_to_high_level_il_block(block, lines)
+		else:
+			# ???
+			pass
+
+	def apply_to_flow_graph(self, graph: 'binaryninja.FlowGraph') -> None:
+		for i, node in enumerate(graph.nodes):
+			lines = node.lines
+			if node.basic_block is not None and isinstance(node.basic_block, binaryninja.BasicBlock):
+				self.apply_to_block(node.basic_block, lines)
+			node.lines = lines
+
+	def apply_to_linear_view_object(
+			self,
+			obj: 'binaryninja.LinearViewObject',
+			prev: Optional['binaryninja.LinearViewObject'],
+			next: Optional['binaryninja.LinearViewObject'],
+			lines: List['binaryninja.LinearDisassemblyLine']
+	) -> List['binaryninja.LinearDisassemblyLine']:
+		# Hack: HLIL bodies don't have basic blocks
+		if obj.identifier.name == "Body":
+			self.apply_to_hlil_body(lines[0].function, lines)
+			return lines
+
+		block_lines = []
+		final_lines = []
+		last_block = None
+		for line in lines:
+			# Assume we've finished a block when the line's block changes
+			if line.block != last_block:
+				if len(block_lines) > 0:
+					if last_block is not None:
+						# Convert linear lines to disassembly lines for the apply()
+						# and then convert back for linear view
+						disasm_lines = [line.contents for line in block_lines]
+						disasm_map = {id(line.contents): line for line in block_lines}
+						self.apply_to_block(last_block, disasm_lines)
+						block_lines = [
+							LinearDisassemblyLine(
+								disasm_map[id(contents)].type if id(contents) in disasm_map else LinearDisassemblyLineType.CodeDisassemblyLineType,
+								block_lines[0].function,
+								block_lines[0].block,
+								contents
+							) for contents in disasm_lines
+						]
+					else:
+						self.apply_to_misc_linear_lines(obj, prev, next, block_lines)
+				last_block = line.block
+				final_lines += block_lines
+				block_lines = []
+			block_lines.append(line)
+
+		# And we've finished a block when we're done with every line
+		if len(block_lines) > 0:
+			if last_block is not None:
+				# Convert linear lines to disassembly lines for the apply()
+				# and then convert back for linear view
+				disasm_lines = [line.contents for line in block_lines]
+				disasm_map = {id(line.contents): line for line in block_lines}
+				self.apply_to_block(last_block, disasm_lines)
+				block_lines = [
+					LinearDisassemblyLine(
+						disasm_map[id(contents)].type if id(contents) in disasm_map else LinearDisassemblyLineType.CodeDisassemblyLineType,
+						block_lines[0].function,
+						block_lines[0].block,
+						contents
+					) for contents in disasm_lines
+				]
+			else:
+				self.apply_to_misc_linear_lines(obj, prev, next, block_lines)
+		final_lines += block_lines
+		return final_lines
