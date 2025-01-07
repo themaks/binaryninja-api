@@ -389,7 +389,11 @@ class RenderLayer(BaseRenderLayer):
 		:return: Updated set of lines to display in Linear View
 		"""
 		# Hack: HLIL bodies don't have basic blocks
-		if obj.identifier.name == "Body":
+		if obj.identifier.name in [
+			"HLIL Function Body",
+			"HLIL SSA Function Body",
+			"Language Representation Function Body"
+		]:
 			self.apply_to_hlil_body(lines[0].function, lines)
 			return lines
 
