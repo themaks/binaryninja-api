@@ -21,8 +21,8 @@
 
 import ctypes
 from dataclasses import dataclass
-from typing import Callable
-from .binaryview import BinaryView
+from typing import Callable, Union, Optional
+from .binaryview import BinaryView, Section, DataVariable
 from .variable import RegisterValue
 from .enums import (
     FirmwareNinjaMemoryHeuristic,
@@ -32,6 +32,100 @@ from .enums import (
 )
 from .function import Function
 from . import _binaryninjacore as core
+
+
+class FirmwareNinjaReferenceNode:
+    """
+    ``class FirmwareNinjaReferenceNode`` is a class that represents reference trees for functions, data variables, and
+    memory regions.
+    """
+
+    def __init__(self, handle=None, view=None):
+        assert handle is not None, "Cannot create reference node directly, run `FirmwareNinja.get_reference_tree`"
+        self._handle = handle
+        self._view = view
+
+    def __del__(self):
+        if core is not None:
+            core.BNFreeFirmwareNinjaReferenceNode(self._handle)
+
+    def is_function(self) -> bool:
+        """
+        ``is_function`` determine if the reference tree node is for a function
+
+        :return: True if the reference tree node is for a function, False otherwise
+        :rtype: bool
+        """
+
+        return core.BNFirmwareNinjaReferenceNodeIsFunction(self._handle)
+
+    def is_data_variable(self)-> bool:
+        """
+        ``is_data_variable`` determine if the reference tree node is for a data variable
+
+        :return: True if the reference tree node is for a data variable, False otherwise
+        :rtype: bool
+        """
+
+        return core.BNFirmwareNinjaReferenceNodeIsDataVariable(self._handle)
+
+    def has_children(self) -> bool:
+        """
+        ``has_children`` determine if the reference tree node contains child reference tree nodes
+
+        :return: True if the reference tree node contains children, False otherwise
+        :rtype: bool
+        """
+
+        return core.BNFirmwareNinjaReferenceNodeHasChildren(self._handle)
+
+    def function(self) -> Function:
+        """
+        ``function`` query the function object from the reference tree node
+
+        :return: Reference tree node function
+        :rtype: Function
+        """
+        bn_function = core.BNFirmwareNinjaReferenceNodeGetFunction(self._handle)
+        if not bn_function:
+            return None
+
+        return Function(handle=bn_function)
+
+    def data_variable(self) -> DataVariable:
+        """
+        ``data_variable`` query the data variable object from the reference tree node
+
+        :return: Reference tree node data variable
+        :rtype: DataVariable
+        """
+        try:
+            bn_data_var = core.BNFirmwareNinjaReferenceNodeGetDataVariable(self._handle)
+            if not bn_data_var:
+                return None
+
+            data_var = binaryview.DataVariable.from_core_struct(bn_data_var, self._view)
+        finally:
+            core.BNFreeDataVariable(bn_data_var)
+        return data_var
+
+    def children(self) -> list['FirmwareNinjaReferenceNode']:
+        """
+        ``children`` query the child reference tree nodes
+
+        :return: Reference tree node function
+        :rtype: list[FirmwareNinjaReferenceNode]
+        """
+        count = ctypes.c_ulonglong(0)
+        bn_nodes = core.BNFirmwareNinjaReferenceNodeGetChildren(self._handle, count)
+        nodes = []
+        try:
+            for i in range(count.value):
+                nodes.append(FirmwareNinjaReferenceNode(core.BNNewFirmwareNinjaReferenceNodeReference(bn_nodes[i])))
+        finally:
+            core.BNFreeFirmwareNinjaReferenceNodes(bn_nodes, count.value)
+
+        return nodes
 
 
 @dataclass
@@ -372,9 +466,9 @@ class FirmwareNinja:
                 accesses_ptr_array[j] = ctypes.pointer(FirmwareNinjaMemoryAccess.to_BNFirmwareNinjaMemoryAccess(access))
 
             fma_info_struct = core.BNFirmwareNinjaFunctionMemoryAccesses(
-                function=info.function.handle,
-                accesses=accesses_ptr_array,
+                start=info.function.start,
                 count=len(info.accesses),
+                accesses=accesses_ptr_array,
             )
 
             fma_info_ptr_array[i] = ctypes.pointer(fma_info_struct)
@@ -466,3 +560,48 @@ class FirmwareNinja:
             return device_accesses_list
         finally:
             core.BNFirmwareNinjaFreeBoardDeviceAccesses(device_accesses, count)
+
+
+    def get_reference_tree(
+        self,
+        location: Union[Section, FirmwareNinjaDevice, DataVariable, int],
+        fma: list[FirmwareNinjaFunctionMemoryAccesses],
+        value: Optional[int] = None
+    ) -> FirmwareNinjaReferenceNode:
+        """
+        ``get_reference_tree`` returns a tree of references for a device, section, or data location
+
+        :param Union[Section, FirmwareNinjaDevice, DataVariable, int] location: Referenced memory location for reference tree
+        :param list[FirmwareNinjaFunctionMemoryAccesses] fma: List of function memory accesses objects
+        :param Optional[int] value: Only include reference node in tree if the specified value is written to the location
+        :return: Root reference node object containing the reference tree
+        :rtype: FirmwareNinjaReferenceNode
+        """
+
+        value = ctypes.pointer(ctypes.c_uint64(value)) if value is not None else None
+        fma_info_ptr_array = self._fma_info_list_to_array(fma)
+        if isinstance(location, FirmwareNinjaDevice):
+            bn_node = core.BNFirmwareNinjaGetMemoryRegionReferenceTree(
+                self._handle, location.start, location.start + location.size,
+                fma_info_ptr_array, len(fma), value
+            )
+        elif isinstance(location, Section):
+            bn_node = core.BNFirmwareNinjaGetMemoryRegionReferenceTree(
+                self._handle, location.start, location.start + location.length,
+                fma_info_ptr_array, len(fma), value
+            )
+        elif isinstance(location, DataVariable):
+            bn_node = core.BNFirmwareNinjaGetAddressReferenceTree(
+                self._handle, location.address, fma_info_ptr_array, len(fma), value
+            )
+        elif isinstance(location, int):
+            bn_node = core.BNFirmwareNinjaGetAddressReferenceTree(
+                self._handle, location, fma_info_ptr_array, len(fma), value
+            )
+        else:
+            raise ValueError("Invalid location type")
+
+        if not bn_node:
+            return None
+
+        return FirmwareNinjaReferenceNode(handle=bn_node, view=self._view)
