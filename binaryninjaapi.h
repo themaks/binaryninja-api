@@ -10408,17 +10408,23 @@ namespace BinaryNinja {
 		*/
 		bool IsILBlock() const;
 
+		/*! Whether the basic block contains Low Level IL
+
+			\return Whether the basic block contains Low Level IL
+		*/
+		bool IsLowLevelILBlock() const;
+
 		/*! Whether the basic block contains Medium Level IL
 
 			\return Whether the basic block contains Medium Level IL
 		*/
-		bool IsLowLevelILBlock() const;
+		bool IsMediumLevelILBlock() const;
 
 		/*! Whether the basic block contains High Level IL
 
 			\return Whether the basic block contains High Level IL
 		*/
-		bool IsMediumLevelILBlock() const;
+		bool IsHighLevelILBlock() const;
 
 		/*! Get the Low Level IL Function for this basic block
 
