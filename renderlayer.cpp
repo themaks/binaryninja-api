@@ -115,6 +115,146 @@ std::string RenderLayer::GetName() const
 }
 
 
+void RenderLayer::ApplyToBlock(
+	Ref<BasicBlock> block,
+	std::vector<DisassemblyTextLine>& lines
+)
+{
+	if (!block->IsILBlock())
+	{
+		ApplyToDisassemblyBlock(block, lines);
+	}
+	else if (block->IsLowLevelILBlock())
+	{
+		ApplyToLowLevelILBlock(block, lines);
+	}
+	else if (block->IsMediumLevelILBlock())
+	{
+		ApplyToMediumLevelILBlock(block, lines);
+	}
+	else if (block->IsHighLevelILBlock())
+	{
+		ApplyToHighLevelILBlock(block, lines);
+	}
+}
+
+
+void RenderLayer::ApplyToFlowGraph(Ref<FlowGraph> graph)
+{
+	for (auto node: graph->GetNodes())
+	{
+		auto lines = node->GetLines();
+		if (node->GetBasicBlock())
+		{
+			ApplyToBlock(node->GetBasicBlock(), lines);
+		}
+		node->SetLines(lines);
+	}
+}
+
+
+void RenderLayer::ApplyToLinearViewObject(
+	Ref<LinearViewObject> obj,
+	Ref<LinearViewObject> prev,
+	Ref<LinearViewObject> next,
+	std::vector<LinearDisassemblyLine>& lines
+)
+{
+	// Hack: HLIL bodies don't have basic blocks
+	if (!lines.empty() &&
+		(obj->GetIdentifier().name == "HLIL Function Body"
+		|| obj->GetIdentifier().name == "HLIL SSA Function Body"
+		|| obj->GetIdentifier().name == "Language Representation Function Body"))
+	{
+		ApplyToHighLevelILBody(lines[0].function, lines);
+		return;
+	}
+
+	std::vector<LinearDisassemblyLine> blockLines;
+	std::vector<LinearDisassemblyLine> finalLines;
+	Ref<BasicBlock> lastBlock;
+
+	for (auto& line: lines)
+	{
+		// Assume we've finished a block when the line's block changes
+		if (line.block != lastBlock)
+		{
+			if (!blockLines.empty())
+			{
+				if (lastBlock)
+				{
+					// Convert linear lines to disassembly lines for the apply()
+					// and then convert back for linear view
+					std::vector<DisassemblyTextLine> disasmLines;
+					for (auto& blockLine: blockLines)
+					{
+						disasmLines.push_back(blockLine.contents);
+					}
+					ApplyToBlock(lastBlock, disasmLines);
+
+					Ref<BasicBlock> block = blockLines[0].block;
+					Ref<Function> func = blockLines[0].function;
+					blockLines.clear();
+					for (auto& blockLine: disasmLines)
+					{
+						LinearDisassemblyLine newLine;
+						// todo: losing this information (might not matter)
+						newLine.type = CodeDisassemblyLineType;
+						newLine.block = block;
+						newLine.function = func;
+						newLine.contents = blockLine;
+						blockLines.push_back(newLine);
+					}
+				}
+				else
+				{
+					ApplyToMiscLinearLines(obj, prev, next, blockLines);
+				}
+			}
+			lastBlock = line.block;
+			std::move(blockLines.begin(), blockLines.end(), std::back_inserter(finalLines));
+		}
+		blockLines.push_back(line);
+	}
+	// And we've finished a block when we're done with every line
+	if (!blockLines.empty())
+	{
+		if (lastBlock)
+		{
+			// Convert linear lines to disassembly lines for the apply()
+			// and then convert back for linear view
+			std::vector<DisassemblyTextLine> disasmLines;
+			for (auto& blockLine: blockLines)
+			{
+				disasmLines.push_back(blockLine.contents);
+			}
+			ApplyToBlock(lastBlock, disasmLines);
+
+			Ref<BasicBlock> block = blockLines[0].block;
+			Ref<Function> func = blockLines[0].function;
+			blockLines.clear();
+			for (auto& blockLine: disasmLines)
+			{
+				LinearDisassemblyLine newLine;
+				// todo: losing this information (might not matter)
+				newLine.type = CodeDisassemblyLineType;
+				newLine.block = block;
+				newLine.function = func;
+				newLine.contents = blockLine;
+				blockLines.push_back(newLine);
+			}
+		}
+		else
+		{
+			ApplyToMiscLinearLines(obj, prev, next, blockLines);
+		}
+	}
+	std::move(blockLines.begin(), blockLines.end(), std::back_inserter(finalLines));
+
+	lines = finalLines;
+}
+
+
 CoreRenderLayer::CoreRenderLayer(BNRenderLayer* layer): RenderLayer(layer)
 {
 }
