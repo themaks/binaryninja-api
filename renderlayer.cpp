@@ -174,82 +174,92 @@ void RenderLayer::ApplyToLinearViewObject(
 	std::vector<LinearDisassemblyLine> finalLines;
 	Ref<BasicBlock> lastBlock;
 
+	auto finishBlock = [&]()
+	{
+		if (!blockLines.empty())
+		{
+			if (lastBlock)
+			{
+				// Convert linear lines to disassembly lines for the apply()
+				// and then convert back for linear view
+				std::vector<LinearDisassemblyLine> newBlockLines;
+				std::vector<DisassemblyTextLine> disasmLines;
+				std::vector<LinearDisassemblyLine> miscLines;
+
+				auto processDisasm = [&]()
+				{
+					if (!disasmLines.empty())
+					{
+						ApplyToBlock(lastBlock, disasmLines);
+						Ref<Function> func = blockLines[0].function;
+						Ref<BasicBlock> block = blockLines[0].block;
+						for (auto& blockLine: disasmLines)
+						{
+							LinearDisassemblyLine newLine;
+							newLine.type = CodeDisassemblyLineType;
+							newLine.function = func;
+							newLine.block = block;
+							newLine.contents = blockLine;
+							newBlockLines.push_back(newLine);
+						}
+						disasmLines.clear();
+					}
+				};
+
+				auto processMisc = [&]()
+				{
+					if (!miscLines.empty())
+					{
+						ApplyToMiscLinearLines(obj, prev, next, miscLines);
+						std::move(
+							miscLines.begin(),
+							miscLines.end(),
+							std::back_inserter(newBlockLines)
+						);
+						miscLines.clear();
+					}
+				};
+
+				for (auto& blockLine: blockLines)
+				{
+					// Lines in the block get sent to processDisasm, anything else goes
+					// to processMisc so we preserve line information
+					if (blockLine.type == CodeDisassemblyLineType)
+					{
+						processMisc();
+						disasmLines.push_back(blockLine.contents);
+					}
+					else
+					{
+						processDisasm();
+						miscLines.push_back(blockLine);
+					}
+				}
+				// At the end, zero or one of these has lines in it
+				processMisc();
+				processDisasm();
+				blockLines = newBlockLines;
+			}
+			else
+			{
+				ApplyToMiscLinearLines(obj, prev, next, blockLines);
+			}
+		}
+		std::move(blockLines.begin(), blockLines.end(), std::back_inserter(finalLines));
+	};
+
 	for (auto& line: lines)
 	{
 		// Assume we've finished a block when the line's block changes
 		if (line.block != lastBlock)
 		{
-			if (!blockLines.empty())
-			{
-				if (lastBlock)
-				{
-					// Convert linear lines to disassembly lines for the apply()
-					// and then convert back for linear view
-					std::vector<DisassemblyTextLine> disasmLines;
-					for (auto& blockLine: blockLines)
-					{
-						disasmLines.push_back(blockLine.contents);
-					}
-					ApplyToBlock(lastBlock, disasmLines);
-
-					Ref<BasicBlock> block = blockLines[0].block;
-					Ref<Function> func = blockLines[0].function;
-					blockLines.clear();
-					for (auto& blockLine: disasmLines)
-					{
-						LinearDisassemblyLine newLine;
-						// todo: losing this information (might not matter)
-						newLine.type = CodeDisassemblyLineType;
-						newLine.block = block;
-						newLine.function = func;
-						newLine.contents = blockLine;
-						blockLines.push_back(newLine);
-					}
-				}
-				else
-				{
-					ApplyToMiscLinearLines(obj, prev, next, blockLines);
-				}
-			}
-			lastBlock = line.block;
-			std::move(blockLines.begin(), blockLines.end(), std::back_inserter(finalLines));
+			finishBlock();
 		}
 		blockLines.push_back(line);
+		lastBlock = line.block;
 	}
 	// And we've finished a block when we're done with every line
-	if (!blockLines.empty())
-	{
-		if (lastBlock)
-		{
-			// Convert linear lines to disassembly lines for the apply()
-			// and then convert back for linear view
-			std::vector<DisassemblyTextLine> disasmLines;
-			for (auto& blockLine: blockLines)
-			{
-				disasmLines.push_back(blockLine.contents);
-			}
-			ApplyToBlock(lastBlock, disasmLines);
-
-			Ref<BasicBlock> block = blockLines[0].block;
-			Ref<Function> func = blockLines[0].function;
-			blockLines.clear();
-			for (auto& blockLine: disasmLines)
-			{
-				LinearDisassemblyLine newLine;
-				// todo: losing this information (might not matter)
-				newLine.type = CodeDisassemblyLineType;
-				newLine.block = block;
-				newLine.function = func;
-				newLine.contents = blockLine;
-				blockLines.push_back(newLine);
-			}
-		}
-		else
-		{
-			ApplyToMiscLinearLines(obj, prev, next, blockLines);
-		}
-	}
-	std::move(blockLines.begin(), blockLines.end(), std::back_inserter(finalLines));
+	finishBlock();
 
 	lines = finalLines;
 }

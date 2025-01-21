@@ -325,50 +325,73 @@ class RenderLayer(metaclass=_RenderLayerMetaclass):
 		block_lines = []
 		final_lines = []
 		last_block = None
+
+		def finish_block():
+			nonlocal block_lines
+			nonlocal final_lines
+			if len(block_lines) > 0:
+				if last_block is not None:
+					# Convert linear lines to disassembly lines for the apply()
+					# and then convert back for linear view
+					new_block_lines = []
+					disasm_lines = []
+					misc_lines = []
+
+					def process_disasm():
+						nonlocal disasm_lines
+
+						if len(disasm_lines) > 0:
+							self.apply_to_block(last_block, disasm_lines)
+							func = block_lines[0].function
+							block = block_lines[0].block
+							for block_line in disasm_lines:
+								new_block_lines.append(
+									LinearDisassemblyLine(
+										LinearDisassemblyLineType.CodeDisassemblyLineType,
+										func,
+										block,
+										block_line
+									)
+								)
+							disasm_lines = []
+
+					def process_misc():
+						nonlocal misc_lines
+						nonlocal new_block_lines
+
+						if len(misc_lines) > 0:
+							self.apply_to_misc_linear_lines(obj, prev, next, misc_lines)
+							new_block_lines += misc_lines
+							misc_lines = []
+
+					for block_line in block_lines:
+						# Lines in the block get sent to process_disasm, anything else goes
+						# to process_misc so we preserve line information
+						if block_line.type == LinearDisassemblyLineType.CodeDisassemblyLineType:
+							process_misc()
+							disasm_lines.append(block_line.contents)
+						else:
+							process_disasm()
+							misc_lines.append(block_line)
+
+					# At the end, zero or one of these has lines in it
+					process_misc()
+					process_disasm()
+					block_lines = new_block_lines
+				else:
+					self.apply_to_misc_linear_lines(obj, prev, next, block_lines)
+				final_lines += block_lines
+				block_lines = []
+
 		for line in lines:
 			# Assume we've finished a block when the line's block changes
 			if line.block != last_block:
-				if len(block_lines) > 0:
-					if last_block is not None:
-						# Convert linear lines to disassembly lines for the apply()
-						# and then convert back for linear view
-						disasm_lines = [block_line.contents for block_line in block_lines]
-						disasm_map = {id(block_line.contents): block_line for block_line in block_lines}
-						self.apply_to_block(last_block, disasm_lines)
-						block_lines = [
-							LinearDisassemblyLine(
-								disasm_map[id(contents)].type if id(contents) in disasm_map else LinearDisassemblyLineType.CodeDisassemblyLineType,
-								block_lines[0].function,
-								block_lines[0].block,
-								contents
-							) for contents in disasm_lines
-						]
-					else:
-						self.apply_to_misc_linear_lines(obj, prev, next, block_lines)
-				last_block = line.block
-				final_lines += block_lines
-				block_lines = []
+				finish_block()
 			block_lines.append(line)
+			last_block = line.block
 
 		# And we've finished a block when we're done with every line
-		if len(block_lines) > 0:
-			if last_block is not None:
-				# Convert linear lines to disassembly lines for the apply()
-				# and then convert back for linear view
-				disasm_lines = [line.contents for line in block_lines]
-				disasm_map = {id(line.contents): line for line in block_lines}
-				self.apply_to_block(last_block, disasm_lines)
-				block_lines = [
-					LinearDisassemblyLine(
-						disasm_map[id(contents)].type if id(contents) in disasm_map else LinearDisassemblyLineType.CodeDisassemblyLineType,
-						block_lines[0].function,
-						block_lines[0].block,
-						contents
-					) for contents in disasm_lines
-				]
-			else:
-				self.apply_to_misc_linear_lines(obj, prev, next, block_lines)
-		final_lines += block_lines
+		finish_block()
 		return final_lines
 
 
