@@ -24,6 +24,8 @@ namespace SharedCacheCore {
 	};
 
 	const std::string SharedCacheMetadataTag = "SHAREDCACHE-SharedCacheData";
+	const std::string SharedCacheOSTag = "SHAREDCACHE-OS";
+	const std::string SharedCacheArchTag = "SHAREDCACHE-Arch";
 
 	struct MemoryRegion : public MetadataSerializable<MemoryRegion>
 	{
