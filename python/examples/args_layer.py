@@ -29,6 +29,7 @@ What seems like it has worked:
   - Thunks are unhandled
 """
 
+
 @functools.lru_cache(maxsize=64)
 def get_param_sites(mlil: MediumLevelILFunction) -> Mapping[LowLevelILInstruction, List[Tuple[MediumLevelILInstruction, int]]]:
     """
@@ -123,6 +124,63 @@ def get_llil_arg(llil: LowLevelILInstruction) -> Iterator[Tuple[str, MediumLevel
     return
 
 
+def apply_to_lines(lines, get_instr, renderer):
+    # So we don't process lines twice since we're iterating over a list as we modify it
+    skip_lines = []
+
+    # Tailcalls that don't return incorrectly mark the { Does not return } line as a call
+    ignore_calls = set()
+
+    for i, line in enumerate(lines):
+        if len(line.tokens) == 0:
+            continue
+        if i in skip_lines:
+            continue
+
+        llil_instr = get_instr(line)
+        if llil_instr is not None:
+            new_lines = []
+            for (arg, call) in get_llil_arg(llil_instr):
+                if call.operation == MediumLevelILOperation.MLIL_TAILCALL_SSA:
+                    comment = f"Argument '{arg}' for tailcall at {call.address:#x}"
+                else:
+                    comment = f"Argument '{arg}' for call at {call.address:#x}"
+                renderer.wrap_comment(new_lines, line, comment, False, "  ",  "")
+                for j, token in enumerate(line.tokens):
+                    if token.type == InstructionTextTokenType.AddressSeparatorToken:
+                        line.tokens = line.tokens[:j]
+                        break
+
+            # Annotate calls too so we can see them easily next to their args
+            if llil_instr.address == line.address and llil_instr.address not in ignore_calls:
+                if llil_instr.operation in [
+                    LowLevelILOperation.LLIL_CALL,
+                    LowLevelILOperation.LLIL_CALL_SSA,
+                    LowLevelILOperation.LLIL_TAILCALL,
+                    LowLevelILOperation.LLIL_TAILCALL_SSA
+                ]:
+                    ignore_calls.add(llil_instr.address)
+                    if llil_instr.operation in [
+                        LowLevelILOperation.LLIL_TAILCALL,
+                        LowLevelILOperation.LLIL_TAILCALL_SSA
+                    ]:
+                        comment = f"Tailcall at {llil_instr.address:#x}"
+                    else:
+                        comment = f"Call at {llil_instr.address:#x}"
+                    renderer.wrap_comment(new_lines, line, comment, False, "  ", "")
+                    for j, token in enumerate(line.tokens):
+                        if token.type == InstructionTextTokenType.AddressSeparatorToken:
+                            line.tokens = line.tokens[:j]
+                            break
+
+            # If any of our lines changed, swap out the existing lines with the new ones
+            if len(new_lines) > 0:
+                lines.pop(i)
+                for j, new_line in enumerate(new_lines):
+                    lines.insert(i + j, new_line)
+                    skip_lines.append(i + j)
+
+
 class ArgumentsRenderLayer(RenderLayer):
     name = "Annotate Call Parameters"
 
@@ -132,58 +190,7 @@ class ArgumentsRenderLayer(RenderLayer):
             lines: List['DisassemblyTextLine']
     ):
         renderer = DisassemblyTextRenderer(block.function)
-
-        # So we don't process lines twice since we're iterating over a list as we modify it
-        skip_lines = []
-
-        # Tailcalls that don't return incorrectly mark the { Does not return } line as a call
-        ignore_calls = set()
-
-        for i, line in enumerate(lines):
-            if len(line.tokens) == 0:
-                continue
-            if i in skip_lines:
-                continue
-            llil_instr = block.function.get_llil_at(line.address)
-            if llil_instr is not None:
-                new_lines = []
-                for (arg, call) in get_llil_arg(llil_instr):
-                    if call.operation == MediumLevelILOperation.MLIL_TAILCALL_SSA:
-                        comment = f"Argument '{arg}' for tailcall at {call.address:#x}"
-                    else:
-                        comment = f"Argument '{arg}' for call at {call.address:#x}"
-                    renderer.wrap_comment(new_lines, line, comment, False, "  ",  "")
-                    for j, token in enumerate(line.tokens):
-                        if token.type == InstructionTextTokenType.AddressSeparatorToken:
-                            line.tokens = line.tokens[:j]
-                            break
-
-                if llil_instr.address == line.address and llil_instr.address not in ignore_calls:
-                    if llil_instr.operation in [
-                        LowLevelILOperation.LLIL_CALL,
-                        LowLevelILOperation.LLIL_CALL_SSA,
-                        LowLevelILOperation.LLIL_TAILCALL,
-                        LowLevelILOperation.LLIL_TAILCALL_SSA
-                    ]:
-                        ignore_calls.add(llil_instr.address)
-                        if llil_instr.operation in [
-                            LowLevelILOperation.LLIL_TAILCALL,
-                            LowLevelILOperation.LLIL_TAILCALL_SSA
-                        ]:
-                            comment = f"Tailcall at {llil_instr.address:#x}"
-                        else:
-                            comment = f"Call at {llil_instr.address:#x}"
-                        renderer.wrap_comment(new_lines, line, comment, False, "  ", "")
-                        for j, token in enumerate(line.tokens):
-                            if token.type == InstructionTextTokenType.AddressSeparatorToken:
-                                line.tokens = line.tokens[:j]
-                                break
-
-                if len(new_lines) > 0:
-                    lines.pop(i)
-                    for j, new_line in enumerate(new_lines):
-                        lines.insert(i + j, new_line)
-                        skip_lines.append(i + j)
+        apply_to_lines(lines, lambda line: block.function.get_llil_at(line.address), renderer)
 
     def apply_to_low_level_il_block(
             self,
@@ -191,57 +198,7 @@ class ArgumentsRenderLayer(RenderLayer):
             lines: List['DisassemblyTextLine']
     ):
         renderer = DisassemblyTextRenderer(block.function)
-
-        # So we don't process lines twice since we're iterating over a list as we modify it
-        skip_lines = []
-
-        # Tailcalls that don't return incorrectly mark the { Does not return } line as a call
-        ignore_calls = set()
-
-        for i, line in enumerate(lines):
-            if len(line.tokens) == 0:
-                continue
-            if i in skip_lines:
-                continue
-            if line.il_instruction is not None:
-                new_lines = []
-                for (arg, call) in get_llil_arg(line.il_instruction):
-                    if call.operation == MediumLevelILOperation.MLIL_TAILCALL_SSA:
-                        comment = f"Argument '{arg}' for tailcall at {call.address:#x}"
-                    else:
-                        comment = f"Argument '{arg}' for call at {call.address:#x}"
-                    renderer.wrap_comment(new_lines, line, comment, False, "  ", "")
-                    for j, token in enumerate(line.tokens):
-                        if token.type == InstructionTextTokenType.AddressSeparatorToken:
-                            line.tokens = line.tokens[:j]
-                            break
-
-                if line.il_instruction.address == line.address and line.il_instruction.address not in ignore_calls:
-                    if line.il_instruction.operation in [
-                        LowLevelILOperation.LLIL_CALL,
-                        LowLevelILOperation.LLIL_CALL_SSA,
-                        LowLevelILOperation.LLIL_TAILCALL,
-                        LowLevelILOperation.LLIL_TAILCALL_SSA
-                    ]:
-                        ignore_calls.add(line.il_instruction.address)
-                        if line.il_instruction.operation in [
-                            LowLevelILOperation.LLIL_TAILCALL,
-                            LowLevelILOperation.LLIL_TAILCALL_SSA
-                        ]:
-                            comment = f"Tailcall at {line.il_instruction.address:#x}"
-                        else:
-                            comment = f"Call at {line.il_instruction.address:#x}"
-                        renderer.wrap_comment(new_lines, line, comment, False, "  ", "")
-                        for j, token in enumerate(line.tokens):
-                            if token.type == InstructionTextTokenType.AddressSeparatorToken:
-                                line.tokens = line.tokens[:j]
-                                break
-
-                if len(new_lines) > 0:
-                    lines.pop(i)
-                    for j, new_line in enumerate(new_lines):
-                        lines.insert(i + j, new_line)
-                        skip_lines.append(i + j)
+        apply_to_lines(lines, lambda line: line.il_instruction, renderer)
 
 
 ArgumentsRenderLayer.register()
