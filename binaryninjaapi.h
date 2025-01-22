@@ -19034,6 +19034,7 @@ namespace BinaryNinja {
 			\return Render Layer's name
 		*/
 		std::string GetName() const;
+
 		/*! Apply this Render Layer to a single Basic Block of Disassembly lines.
 			Subclasses should modify the input `lines` list to make modifications to
 			the presentation of the block.

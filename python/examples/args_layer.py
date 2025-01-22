@@ -2,11 +2,10 @@ import functools
 from typing import List, Mapping, Tuple, Iterator
 
 from binaryninja import DisassemblyTextLine, LinearDisassemblyLineType, Function, \
-    LowLevelILInstruction, TypeClass, DisassemblyTextRenderer, MediumLevelILFunction, \
+    LowLevelILInstruction, LowLevelILOperation, TypeClass, DisassemblyTextRenderer, MediumLevelILFunction, \
     MediumLevelILCallSsa, MediumLevelILVarSsa, MediumLevelILConstBase, \
     MediumLevelILInstruction, MediumLevelILTailcallSsa, MediumLevelILOperation, \
-    MediumLevelILVarPhi, log_debug
-from binaryninja import RenderLayer, BasicBlock, InstructionTextTokenType, FlowGraph, \
+    MediumLevelILVarPhi, log_debug, RenderLayer, BasicBlock, InstructionTextTokenType, FlowGraph, \
     LinearViewObject, LinearDisassemblyLine
 
 """
@@ -133,7 +132,13 @@ class ArgumentsRenderLayer(RenderLayer):
             lines: List['DisassemblyTextLine']
     ):
         renderer = DisassemblyTextRenderer(block.function)
+
+        # So we don't process lines twice since we're iterating over a list as we modify it
         skip_lines = []
+
+        # Tailcalls that don't return incorrectly mark the { Does not return } line as a call
+        ignore_calls = set()
+
         for i, line in enumerate(lines):
             if len(line.tokens) == 0:
                 continue
@@ -153,6 +158,27 @@ class ArgumentsRenderLayer(RenderLayer):
                             line.tokens = line.tokens[:j]
                             break
 
+                if llil_instr.address == line.address and llil_instr.address not in ignore_calls:
+                    if llil_instr.operation in [
+                        LowLevelILOperation.LLIL_CALL,
+                        LowLevelILOperation.LLIL_CALL_SSA,
+                        LowLevelILOperation.LLIL_TAILCALL,
+                        LowLevelILOperation.LLIL_TAILCALL_SSA
+                    ]:
+                        ignore_calls.add(llil_instr.address)
+                        if llil_instr.operation in [
+                            LowLevelILOperation.LLIL_TAILCALL,
+                            LowLevelILOperation.LLIL_TAILCALL_SSA
+                        ]:
+                            comment = f"Tailcall at {llil_instr.address:#x}"
+                        else:
+                            comment = f"Call at {llil_instr.address:#x}"
+                        renderer.wrap_comment(new_lines, line, comment, False, "  ", "")
+                        for j, token in enumerate(line.tokens):
+                            if token.type == InstructionTextTokenType.AddressSeparatorToken:
+                                line.tokens = line.tokens[:j]
+                                break
+
                 if len(new_lines) > 0:
                     lines.pop(i)
                     for j, new_line in enumerate(new_lines):
@@ -165,7 +191,13 @@ class ArgumentsRenderLayer(RenderLayer):
             lines: List['DisassemblyTextLine']
     ):
         renderer = DisassemblyTextRenderer(block.function)
+
+        # So we don't process lines twice since we're iterating over a list as we modify it
         skip_lines = []
+
+        # Tailcalls that don't return incorrectly mark the { Does not return } line as a call
+        ignore_calls = set()
+
         for i, line in enumerate(lines):
             if len(line.tokens) == 0:
                 continue
@@ -183,6 +215,27 @@ class ArgumentsRenderLayer(RenderLayer):
                         if token.type == InstructionTextTokenType.AddressSeparatorToken:
                             line.tokens = line.tokens[:j]
                             break
+
+                if line.il_instruction.address == line.address and line.il_instruction.address not in ignore_calls:
+                    if line.il_instruction.operation in [
+                        LowLevelILOperation.LLIL_CALL,
+                        LowLevelILOperation.LLIL_CALL_SSA,
+                        LowLevelILOperation.LLIL_TAILCALL,
+                        LowLevelILOperation.LLIL_TAILCALL_SSA
+                    ]:
+                        ignore_calls.add(line.il_instruction.address)
+                        if line.il_instruction.operation in [
+                            LowLevelILOperation.LLIL_TAILCALL,
+                            LowLevelILOperation.LLIL_TAILCALL_SSA
+                        ]:
+                            comment = f"Tailcall at {line.il_instruction.address:#x}"
+                        else:
+                            comment = f"Call at {line.il_instruction.address:#x}"
+                        renderer.wrap_comment(new_lines, line, comment, False, "  ", "")
+                        for j, token in enumerate(line.tokens):
+                            if token.type == InstructionTextTokenType.AddressSeparatorToken:
+                                line.tokens = line.tokens[:j]
+                                break
 
                 if len(new_lines) > 0:
                     lines.pop(i)
