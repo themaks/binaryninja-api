@@ -18540,6 +18540,165 @@ namespace BinaryNinja {
 		std::vector<Ref<FirmwareNinjaReferenceNode>> GetChildren();
 	};
 
+	/*! FirmwareNinjaRelationship is a class used to represent inter-binary and cross-binary relationships. This class is
+		only available in the Ultimate Edition of Binary Ninja.
+
+		\ingroup firmwareninja
+	*/
+	class FirmwareNinjaRelationship : public CoreRefCountObject<BNFirmwareNinjaRelationship, BNNewFirmwareNinjaRelationshipReference, BNFreeFirmwareNinjaRelationship>
+	{
+		BNFirmwareNinjaRelationship* m_object;
+	public:
+		FirmwareNinjaRelationship(Ref<BinaryView> view, BNFirmwareNinjaRelationship* relationship = nullptr);
+		~FirmwareNinjaRelationship();
+
+		/*! Set the primary relationship object to an address
+
+			\param address Address in current binary view
+		 */
+		void SetPrimaryAddress(uint64_t address);
+
+		/*! Set the primary relationship object to a data variable
+
+			\param var DataVariable in current binary view
+		 */
+		void SetPrimaryDataVariable(DataVariable& variable);
+
+		/*! Set the primary relationship object to a function
+
+			\param function Function in current binary view
+		 */
+		void SetPrimaryFunction(Ref<Function> function);
+
+		/*! Determine if the primary object is an address
+
+		  \return true if the primary object is an address, false otherwise
+		 */
+		bool PrimaryIsAddress() const;
+
+		/*! Determine if the primary object is a data variable
+
+		  \return true if the primary object is a data variable, false otherwise
+		 */
+		bool PrimaryIsDataVariable() const;
+
+		/*! Determine if the primary object is a function
+
+		  \return true if the primary object is a function, false otherwise
+		 */
+		bool PrimaryIsFunction() const;
+
+		/*! Query the primary object as a data variable from the relationship
+
+		  \param var Output data variable
+		  \return true if the data variable was queried successfully, false otherwise
+		 */
+		bool GetPrimaryDataVariable(DataVariable& var);
+
+		/*! Query the primary object as an address from the relationship
+
+		  \return Optional address, if it can be queried
+		 */
+		std::optional<uint64_t> GetPrimaryAddress() const;
+
+		/*! Query the primary object as a function from the relationship
+
+		  \return Function object
+		 */
+		Ref<Function> GetPrimaryFunction() const;
+
+		/*! Set the secondary relationship object to an address
+
+			\param address Address in current binary view
+		 */
+		void SetSecondaryAddress(uint64_t address);
+
+		/*! Set the secondary relationship object to a data variable
+
+			\param var DataVariable in current binary view
+		 */
+		void SetSecondaryDataVariable(DataVariable& variable);
+
+		/*! Set the secondary relationship object to a function
+
+			\param function Function in current binary view
+		 */
+		void SetSecondaryFunction(Ref<Function> function);
+
+		/*! Set the secondary relationship object to an external address
+
+			\param library ExternalLibrary object
+			\param address Address in external library
+		 */
+		void SetSecondaryExternalAddress(Ref<ExternalLibrary> library, uint64_t address);
+
+		/*! Determine if the secondary object is an address in the current binary view
+
+		  \return true if the secondary object is an address in the current binary view, false otherwise
+		 */
+		bool SecondaryIsAddress() const;
+
+		/*! Determine if the secondary object is a data variable in the current binary view
+
+		  \return true if the secondary object is a data variable in the current binary view, false otherwise
+		 */
+		bool SecondaryIsDataVariable() const;
+
+		/*! Determine if the secondary object is a function in the current binary view
+
+		  \return true if the secondary object is a function in the current binary view, false otherwise
+		 */
+		bool SecondaryIsFunction() const;
+
+		/*! Determine if the secondary object is an address contained in another binary in the project
+
+		  \return true if the secondary object is an external address, false otherwise
+		 */
+		bool SecondaryIsExternalAddress() const;
+
+		/*! Query the secondary object's external library
+
+		  \return The secondary object's external library or nullptr if it is not an external address
+		 */
+		Ref<ExternalLibrary> GetSecondaryExternalLibrary() const;
+
+		/*! Query the secondary object as an address from the relationship
+
+		  \return Optional address, if the secondary object is an address
+		 */
+		std::optional<uint64_t> GetSecondaryAddress() const;
+
+		/*! Query the secondary object as a data variable from the relationship
+
+		  \param var Output data variable
+		  \return true if the data variable was queried successfully, false otherwise
+		 */
+		bool GetSecondaryDataVariable(DataVariable& variable);
+
+		/*! Query the secondary object as a function from the relationship
+
+		  \return Function object
+		 */
+		Ref<Function> GetSecondaryFunction() const;
+
+		/*! Query the description of the relationship
+
+		  \return Description string
+		 */
+		std::string GetDescription() const;
+
+		/*! Query the relationship provenance
+
+		  \return Provenance string
+		 */
+		std::string GetProvenance() const;
+
+		/*! Query the relationship GUID
+
+		  \return Relationship GUID string
+		 */
+		std::string GetGuid() const;
+	};
 
 	/*! FirmwareNinja is a class containing features specific to embedded firmware analysis. This class is only
 		available in the Ultimate Edition of Binary Ninja.
@@ -18670,6 +18829,31 @@ namespace BinaryNinja {
 			const std::vector<FirmwareNinjaFunctionMemoryAccesses>& fma,
 			uint64_t* value = nullptr
 		);
+
+		/*! Query Firmware Ninja relationships from the binary view metadata
+
+		  \return Vector of Firmware Ninja relationships
+		 */
+		std::vector<Ref<FirmwareNinjaRelationship>> QueryRelationships();
+
+		/*! Store a Firmware Ninja relationship in the binary view metadata
+
+			\param relationship Firmware Ninja relationship
+		 */
+		void AddRelationship(Ref<FirmwareNinjaRelationship> relationship);
+
+		/* Query a Firmware Ninja relationship by GUID
+
+			\param guid GUID of the relationship to query
+			\return Firmware Ninja relationship
+		 */
+		Ref<FirmwareNinjaRelationship> GetRelationshipByGuid(const std::string& guid);
+
+		/*! Remove a Firmware Ninja relationship from the binary view metadata
+
+			\param guid GUID of the relationship to remove
+		 */
+		void RemoveRelationshipByGuid(const std::string& guid);
 	};
 
 

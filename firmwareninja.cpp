@@ -58,6 +58,213 @@ static void FreeMemoryInfoArray(BNFirmwareNinjaFunctionMemoryAccesses** fma, siz
 }
 
 
+FirmwareNinjaRelationship::FirmwareNinjaRelationship(Ref<BinaryView> m_view, BNFirmwareNinjaRelationship* handle)
+{
+	if (handle)
+		m_object = handle;
+	else
+		m_object = BNCreateFirmwareNinjaRelationship(m_view->GetObject());
+}
+
+
+FirmwareNinjaRelationship::~FirmwareNinjaRelationship()
+{
+	BNFreeFirmwareNinjaRelationship(m_object);
+}
+
+
+void FirmwareNinjaRelationship::SetPrimaryAddress(uint64_t address)
+{
+	BNFirmwareNinjaRelationshipSetPrimaryAddress(m_object, address);
+}
+
+
+void FirmwareNinjaRelationship::SetPrimaryDataVariable(DataVariable& variable)
+{
+	BNFirmwareNinjaRelationshipSetPrimaryDataVariable(m_object, variable.address);
+}
+
+
+void FirmwareNinjaRelationship::SetPrimaryFunction(Ref<Function> function)
+{
+	BNFirmwareNinjaRelationshipSetPrimaryFunction(m_object, function->GetObject());
+}
+
+
+bool FirmwareNinjaRelationship::PrimaryIsAddress() const
+{
+	return BNFirmwareNinjaRelationshipPrimaryIsAddress(m_object);
+}
+
+
+bool FirmwareNinjaRelationship::PrimaryIsDataVariable() const
+{
+	return BNFirmwareNinjaRelationshipPrimaryIsDataVariable(m_object);
+}
+
+
+bool FirmwareNinjaRelationship::PrimaryIsFunction() const
+{
+	return BNFirmwareNinjaRelationshipPrimaryIsFunction(m_object);
+}
+
+
+bool FirmwareNinjaRelationship::GetPrimaryDataVariable(DataVariable& variable)
+{
+	auto bnVariable = BNFirmwareNinjaRelationshipGetPrimaryDataVariable(m_object);
+	if (!bnVariable)
+		return false;
+
+	variable.address = bnVariable->address;
+	variable.type = Confidence(new Type(BNNewTypeReference(bnVariable->type)), bnVariable->typeConfidence);
+	variable.autoDiscovered = bnVariable->autoDiscovered;
+	BNFreeDataVariable(bnVariable);
+	return true;
+}
+
+
+std::optional<uint64_t> FirmwareNinjaRelationship::GetPrimaryAddress() const
+{
+	std::optional<uint64_t> result;
+	uint64_t tmp;
+	if (BNFirmwareNinjaRelationshipGetPrimaryAddress(m_object, &tmp))
+		result = tmp;
+
+	return result;
+}
+
+
+Ref<Function> FirmwareNinjaRelationship::GetPrimaryFunction() const
+{
+	auto bnFunction = BNFirmwareNinjaRelationshipGetPrimaryFunction(m_object);
+	if (!bnFunction)
+		return nullptr;
+
+	return new Function(BNNewFunctionReference(bnFunction));
+}
+
+
+void FirmwareNinjaRelationship::SetSecondaryAddress(uint64_t address)
+{
+	BNFirmwareNinjaRelationshipSetSecondaryAddress(m_object, address);
+}
+
+
+void FirmwareNinjaRelationship::SetSecondaryDataVariable(DataVariable& variable)
+{
+	BNFirmwareNinjaRelationshipSetSecondaryDataVariable(m_object, variable.address);
+}
+
+
+void FirmwareNinjaRelationship::SetSecondaryFunction(Ref<Function> function)
+{
+	BNFirmwareNinjaRelationshipSetSecondaryFunction(m_object, function->GetObject());
+}
+
+
+void FirmwareNinjaRelationship::SetSecondaryExternalAddress(Ref<ExternalLibrary> library, uint64_t address)
+{
+	BNFirmwareNinjaRelationshipSetSecondaryExternalAddress(m_object, library->GetObject(), address);
+}
+
+
+bool FirmwareNinjaRelationship::SecondaryIsAddress() const
+{
+	return BNFirmwareNinjaRelationshipSecondaryIsAddress(m_object);
+}
+
+
+bool FirmwareNinjaRelationship::SecondaryIsDataVariable() const
+{
+	return BNFirmwareNinjaRelationshipSecondaryIsDataVariable(m_object);
+}
+
+
+bool FirmwareNinjaRelationship::SecondaryIsFunction() const
+{
+	return BNFirmwareNinjaRelationshipSecondaryIsFunction(m_object);
+}
+
+
+bool FirmwareNinjaRelationship::SecondaryIsExternalAddress() const
+{
+	return BNFirmwareNinjaRelationshipSecondaryIsExternalAddress(m_object);
+}
+
+
+Ref<ExternalLibrary> FirmwareNinjaRelationship::GetSecondaryExternalLibrary() const
+{
+	auto bnLibrary = BNFirmwareNinjaRelationshipGetSecondaryExternalLibrary(m_object);
+	if (!bnLibrary)
+		return nullptr;
+
+	return new ExternalLibrary(BNNewExternalLibraryReference(bnLibrary));
+}
+
+
+std::optional<uint64_t> FirmwareNinjaRelationship::GetSecondaryAddress() const
+{
+	std::optional<uint64_t> result;
+	uint64_t tmp;
+	if (BNFirmwareNinjaRelationshipGetSecondaryAddress(m_object, &tmp))
+		result = tmp;
+
+	return result;
+}
+
+
+bool FirmwareNinjaRelationship::GetSecondaryDataVariable(DataVariable& variable)
+{
+	auto bnVariable = BNFirmwareNinjaRelationshipGetSecondaryDataVariable(m_object);
+	if (!bnVariable)
+		return false;
+
+	variable.address = bnVariable->address;
+	variable.type = Confidence(new Type(BNNewTypeReference(bnVariable->type)), bnVariable->typeConfidence);
+	variable.autoDiscovered = bnVariable->autoDiscovered;
+	BNFreeDataVariable(bnVariable);
+	return true;
+}
+
+
+Ref<Function> FirmwareNinjaRelationship::GetSecondaryFunction() const
+{
+	auto bnFunction = BNFirmwareNinjaRelationshipGetSecondaryFunction(m_object);
+	if (!bnFunction)
+		return nullptr;
+
+	return new Function(BNNewFunctionReference(bnFunction));
+}
+
+
+std::string FirmwareNinjaRelationship::GetDescription() const
+{
+	std::string result = "";
+	auto bnDescription = BNFirmwareNinjaRelationshipGetDescription(m_object);
+	if (bnDescription)
+		result = std::string(bnDescription);
+
+	return result;
+}
+
+
+std::string FirmwareNinjaRelationship::GetProvenance() const
+{
+	std::string result = "";
+	auto bnProvenance = BNFirmwareNinjaRelationshipGetProvenance(m_object);
+	if (bnProvenance)
+		result = std::string(bnProvenance);
+
+	return result;
+}
+
+
+std::string FirmwareNinjaRelationship::GetGuid() const
+{
+	return BNFirmwareNinjaRelationshipGetGuid(m_object);
+}
+
+
 FirmwareNinjaReferenceNode::FirmwareNinjaReferenceNode(BNFirmwareNinjaReferenceNode* node)
 {
 	m_object = node;
@@ -419,4 +626,43 @@ Ref<FirmwareNinjaReferenceNode> FirmwareNinja::GetReferenceTree(
 		return nullptr;
 
 	return new FirmwareNinjaReferenceNode(bnReferenceTree);
+}
+
+
+std::vector<Ref<FirmwareNinjaRelationship>> FirmwareNinja::QueryRelationships()
+{
+	std::vector<Ref<FirmwareNinjaRelationship>> result;
+	size_t count = 0;
+	auto bnRelationships = BNFirmwareNinjaQueryRelationships(m_object, &count);
+	result.reserve(count);
+	for (size_t i = 0; i < count; ++i)
+	{
+		result.push_back(new FirmwareNinjaRelationship(m_view,
+			BNNewFirmwareNinjaRelationshipReference(bnRelationships[i])));
+	}
+
+	// TODO free bnRelationships
+	return result;
+}
+
+
+void FirmwareNinja::AddRelationship(Ref<FirmwareNinjaRelationship> relationship)
+{
+	BNFirmwareNinjaAddRelationship(m_object, relationship->GetObject());
+}
+
+
+Ref<FirmwareNinjaRelationship> FirmwareNinja::GetRelationshipByGuid(const std::string& guid)
+{
+	auto bnRelationship = BNFirmwareNinjaGetRelationshipByGuid(m_object, guid.c_str());
+	if (!bnRelationship)
+		return nullptr;
+
+	return new FirmwareNinjaRelationship(m_view, BNNewFirmwareNinjaRelationshipReference(bnRelationship));
+}
+
+
+void FirmwareNinja::RemoveRelationshipByGuid(const std::string& guid)
+{
+	BNFirmwareNinjaRemoveRelationshipByGuid(m_object, guid.c_str());
 }

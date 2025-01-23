@@ -31,7 +31,233 @@ from .enums import (
     FirmwareNinjaSectionType,
 )
 from .function import Function
+from .externallibrary import ExternalLibrary
 from . import _binaryninjacore as core
+
+
+class FirmwareNinjaRelationship:
+    """
+    ``class FirmwareNinjaRelationship`` is a class for representing inter-binary and cross-binary relationships.
+    """
+
+    def __init__(self, view: BinaryView, handle=None) -> None:
+        if handle is None:
+            self.handle = core.BNCreateFirmwareNinjaRelationship(view.handle)
+        else:
+            self.handle = handle
+        self._view = view
+
+    def __del__(self):
+        if core is not None:
+            core.BNFreeFirmwareNinjaRelationship(self.handle)
+
+    def set_primary(self, obj: Union[DataVariable, Function, int]) -> None:
+        """
+        ``set_primary`` sets the primary object of the relationship
+
+        :param Union[DataVariable, Function, int] obj: Primary object of the relationship
+        :return: None
+        :rtype: None
+        """
+
+        if isinstance(obj, DataVariable):
+            core.BNFirmwareNinjaRelationshipSetPrimaryDataVariable(
+                self.handle, obj.address)
+        elif isinstance(obj, Function):
+            core.BNFirmwareNinjaRelationshipSetPrimaryFunction(
+                self.handle, obj.handle)
+        elif isinstance(obj, int):
+            core.BNFirmwareNinjaRelationshipSetPrimaryAddress(self.handle, obj)
+        else:
+            raise ValueError(
+                "Primary object must be a DataVariable, Function, or integer address"
+            )
+
+    @property
+    def _primary_data_variable(self) -> DataVariable:
+        try:
+            bn_data_var = core.BNFirmwareNinjaRelationshipGetPrimaryDataVariable(
+                self.handle)
+            if not bn_data_var:
+                return None
+
+            data_var = DataVariable.from_core_struct(bn_data_var.contents,
+                                                     self._view)
+        finally:
+            core.BNFreeDataVariable(bn_data_var)
+        return data_var
+
+    @property
+    def _primary_function(self) -> Function:
+        bn_function = core.BNFirmwareNinjaRelationshipGetPrimaryFunction(
+            self.handle)
+        if not bn_function:
+            return None
+
+        return Function(handle=bn_function)
+
+    @property
+    def _primary_address(self) -> int:
+        result = ctypes.c_uint64()
+        if not core.BNFirmwareNinjaRelationshipGetPrimaryAddress(
+                self.handle, ctypes.byref(result)):
+            return None
+
+        return result.value
+
+    @property
+    def primary(self) -> Union[DataVariable, Function, int]:
+        """
+        ``primary`` queries the primary object of the relationship
+
+        :return: Primary object of the relationship
+        :rtype: Union[DataVariable, Function, int]
+        """
+
+        if core.BNFirmwareNinjaRelationshipPrimaryIsDataVariable(self.handle):
+            return self._primary_data_variable
+        elif core.BNFirmwareNinjaRelationshipPrimaryIsFunction(self.handle):
+            return self._primary_function
+        elif core.BNFirmwareNinjaRelationshipPrimaryIsAddress(self.handle):
+            return self._primary_address
+        else:
+            return None
+
+    def set_secondary(self,
+                      obj: Union[DataVariable, Function, int],
+                      library: Optional[ExternalLibrary] = None) -> None:
+        """
+        ``set_secondary`` sets the secondary object of the relationship
+
+        :param Union[DataVariable, Function, int] obj: Secondary object of the relationship
+        :param Optional[ExternalLibrary] library: Optional external binary or library for the secondary object
+        :return: None
+        :rtype: None
+        """
+
+        if library and not isinstance(obj, int):
+            raise ValueError(
+                "Secondary object must be an integer address if external library is provided"
+            )
+
+        if isinstance(obj, DataVariable):
+            core.BNFirmwareNinjaRelationshipSetSecondaryDataVariable(
+                self.handle, obj.address)
+        elif isinstance(obj, Function):
+            core.BNFirmwareNinjaRelationshipSetSecondaryFunction(
+                self.handle, obj.handle)
+        elif isinstance(obj, int):
+            if library:
+                core.BNFirmwareNinjaRelationshipSetSecondaryExternalAddress(
+                    self.handle, library.handle, obj)
+            else:
+                core.BNFirmwareNinjaRelationshipSetSecondaryAddress(
+                    self.handle, obj)
+
+    @property
+    def _secondary_data_variable(self) -> DataVariable:
+        try:
+            bn_data_var = core.BNFirmwareNinjaRelationshipGetSecondaryDataVariable(
+                self.handle)
+            if not bn_data_var:
+                return None
+
+            data_var = DataVariable.from_core_struct(bn_data_var.contents,
+                                                     self._view)
+        finally:
+            core.BNFreeDataVariable(bn_data_var)
+        return data_var
+
+    @property
+    def _secondary_function(self) -> Function:
+        bn_function = core.BNFirmwareNinjaRelationshipGetSecondaryFunction(
+            self.handle)
+        if not bn_function:
+            return None
+
+        return Function(handle=bn_function)
+
+    @property
+    def _secondary_address(self) -> int:
+        result = ctypes.c_uint64()
+        if not core.BNFirmwareNinjaRelationshipGetSecondaryAddress(
+                self.handle, ctypes.byref(result)):
+            return None
+
+        return result.value
+
+    @property
+    def _secondary_external_library(self) -> ExternalLibrary:
+        bn_library = core.BNFirmwareNinjaRelationshipGetSecondaryExternalLibrary(
+            self.handle)
+        if not bn_library:
+            return None
+
+        return ExternalLibrary(handle=bn_library)
+
+    @property
+    def secondary(
+        self
+    ) -> Union[DataVariable, Function, int, tuple[int, ExternalLibrary]]:
+        """
+        ``secondary`` queries the secondary object of the relationship
+
+        :return: Secondary object of the relationship
+        :rtype: Union[DataVariable, Function, int, tuple[int, ExternalLibrary]]
+        """
+
+        if core.BNFirmwareNinjaRelationshipSecondaryIsDataVariable(self.handle):
+            return self._secondary_data_variable
+        elif core.BNFirmwareNinjaRelationshipSecondaryIsFunction(self.handle):
+            return self._secondary_function
+        elif core.BNFirmwareNinjaRelationshipSecondaryIsAddress(self.handle):
+            return self._secondary_address
+        elif core.BNFirmwareNinjaRelationshipSecondaryIsExternalAddress(
+                self.handle):
+            return self._secondary_address, self._secondary_external_library
+        else:
+            return None
+
+    def set_description(self, description: str) -> None:
+        """
+        ``set_description`` sets the description of the relationship
+
+        :param str description: Description of the relationship
+        :return: None
+        :rtype: None
+        """
+
+        core.BNFirmwareNinjaRelationshipSetDescription(self.handle, description)
+
+    @property
+    def description(self) -> str:
+        """
+        ``description`` queries the description of the relationship
+
+        :return: Description of the relationship
+        :rtype: str
+        """
+
+        return core.BNFirmwareNinjaRelationshipGetDescription(self.handle)
+
+    def set_provenance(self, provenance: str) -> None:
+        """
+        ``set_provenance`` sets the provenance of the relationship
+
+        :param str provenance: Provenance of the relationship
+        :return: None
+        :rtype: None
+        """
+
+        core.BNFirmwareNinjaRelationshipSetProvenance(self.handle, provenance)
+
+    @property
+    def provenance(self) -> str:
+        return core.BNFirmwareNinjaRelationshipGetProvenance(self.handle)
+
+    @property
+    def guid(self) -> str:
+        return core.BNFirmwareNinjaRelationshipGetGuid(self.handle)
 
 
 class FirmwareNinjaReferenceNode:
@@ -109,7 +335,8 @@ class FirmwareNinjaReferenceNode:
             if not bn_data_var:
                 return None
 
-            data_var = DataVariable.from_core_struct(bn_data_var.contents, self._view)
+            data_var = DataVariable.from_core_struct(bn_data_var.contents,
+                                                     self._view)
         finally:
             core.BNFreeDataVariable(bn_data_var)
         return data_var
@@ -598,7 +825,8 @@ class FirmwareNinja:
 
     def get_reference_tree(
             self,
-            location: Union[Section, FirmwareNinjaDevice, Function, DataVariable, int],
+            location: Union[Section, FirmwareNinjaDevice, Function,
+                            DataVariable, int],
             fma: list[FirmwareNinjaFunctionMemoryAccesses],
             value: Optional[int] = None) -> FirmwareNinjaReferenceNode:
         """
@@ -613,8 +841,11 @@ class FirmwareNinja:
         :rtype: FirmwareNinjaReferenceNode
         """
 
-        if fma is None and (isinstance(location, Section) or isinstance(location, FirmwareNinjaDevice)):
-            raise ValueError("Function memory accesses cannot be None for location type Section or FirmwareNinjaDevice")
+        if fma is None and (isinstance(location, Section) or
+                            isinstance(location, FirmwareNinjaDevice)):
+            raise ValueError(
+                "Function memory accesses cannot be None for location type Section or FirmwareNinjaDevice"
+            )
 
         value = ctypes.pointer(
             ctypes.c_uint64(value)) if value is not None else None
@@ -649,3 +880,60 @@ class FirmwareNinja:
             return None
 
         return FirmwareNinjaReferenceNode(handle=bn_node, view=self._view)
+
+    @property
+    def relationships(self) -> list[FirmwareNinjaRelationship]:
+        """
+        ``query_relationships`` queries all relationships from the binary view metadata
+
+        :return: List of relationships
+        :rtype: list[FirmwareNinjaRelationship]
+        """
+
+        count = ctypes.c_ulonglong(0)
+        relationships = core.BNFirmwareNinjaQueryRelationships(
+            self._handle, count)
+        relationship_list = []
+        for i in range(count.value):
+            relationship_list.append(
+                FirmwareNinjaRelationship(self._view, handle=relationships[i]))
+
+        return relationship_list
+
+    def add_relationship(self, relationship: FirmwareNinjaRelationship) -> None:
+        """
+        ``add_relationship`` adds a relationship to the binary view metadata
+
+        :param FirmwareNinjaRelationship relationship: Relationship to add
+        :return: None
+        :rtype: None
+        """
+
+        core.BNFirmwareNinjaAddRelationship(self._handle, relationship.handle)
+
+    def get_relationship_by_guid(self, guid: str) -> FirmwareNinjaRelationship:
+        """
+        ``get_relationship_by_guid`` queries a relationship from the binary view metadata by GUID
+
+        :param str guid: GUID of the relationship
+        :return: Relationship
+        :rtype: FirmwareNinjaRelationship
+        """
+
+        relationship = core.BNFirmwareNinjaGetRelationshipByGuid(
+            self._handle, guid)
+        if not relationship:
+            return None
+
+        return FirmwareNinjaRelationship(self._view, handle=relationship)
+
+    def remove_relationship_by_guid(self, guid: str) -> None:
+        """
+        ``remove_relationship_by_guid`` removes a relationship from the binary view metadata by GUID
+
+        :param str guid: GUID of the relationship
+        :return: None
+        :rtype: None
+        """
+
+        core.BNFirmwareNinjaRemoveRelationshipByGuid(self._handle, guid)
